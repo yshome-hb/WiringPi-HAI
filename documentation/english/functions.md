@@ -217,7 +217,7 @@ After that, the corresponding clock and range values ​​can be adapted, witho
 
 ### digitalWrite
 
-Set the value of a GPIO pin.
+Writes the value `HIGH` or `LOW` (1 or 0) to the given pin which must have been previously set as an output.
 
 ```C
 void digitalWrite(int pin, int value);
@@ -226,15 +226,20 @@ void digitalWrite(int pin, int value);
 ``pin``: The desired Pin (BCM-, Wiringpi- or PIN number).  
 ``value``: The logical value...
 
-- `HIGH` ... Value 1 (electrical ~ 3.3 V)  
+- `HIGH` ... Value 1 (electrical ~3.3 V)
 - `LOW` ... Value 0 (electrical ~0 V / GND)
 
 **Example:**  
 
 ```C
 pinMode(17, OUTPUT);
-DigitalWrite(17, HIGH);
+
+digitalWrite(17, HIGH);
 ```
+
+**Note**  
+
+WiringPi treats any non-zero number as `HIGH`, however 0 is the only representation of `LOW`.
 
 ### pullUpDnControl
 
@@ -248,8 +253,8 @@ void pullUpDnControl (int pin, int pud);
 ``pud``: The resistance type...
 
 - `PUD_OFF` ... No resistance
-- `PUD_UP` ... Pull-Up resistance (~50 kOhm)
-- `PUD_DOWN` ... Pull-Down resistance (~50 kOhm)
+- `PUD_UP` ... Pull-Up to pull to 3.3v (~50 kOhm resistance)
+- `PUD_DOWN` ... Pull-Down to pull to ground (~50 kOhm resistance)
 
 **Example:**  
 
@@ -259,7 +264,7 @@ pullUpDnControl(17, PUD_DOWN);
 
 ### digitalRead
 
-Reads the value of one GPIO-Pin.
+Reads the value of the given GPIO-Pin. It will be `HIGH` or `LOW` (1 or 0) depending on the logic level at the pin.
 
 ```C
 int digitalRead(int pin);
@@ -269,7 +274,7 @@ int digitalRead(int pin);
 ``Return Value``: The logical value.  
 
 > `HIGH` ... Value 1  
-> `LOW` ... Value 0  
+> `LOW` ... Value 0
 
 **Example:**  
 
@@ -536,7 +541,19 @@ else {
 }
 ```
 
-### wiringPiI2CRead / wiringPiI2CReadReg8 / wiringPiI2CReadReg16 / wiringPiI2CReadBlockData
+### wiringPiI2CRead
+
+Simple device read. Some devices accept data this way without needing to access any internal registers.
+
+### wiringPiI2CReadReg8
+
+Reads an 8-bit data value into the device register indicated.
+
+### wiringPiI2CReadReg16
+
+Reads an 16-bit data value into the device register indicated.
+
+### wiringPiI2CReadBlockData
 
 ...
 
@@ -579,7 +596,7 @@ Functions that start with  ``wiringPiSPIx`` are new since version 3, allowing th
 
 ### wiringPiSPISetup / wiringPiSPISetupMode / wiringPiSPIxSetupMode
 
-Opens the specified SPI bus.
+Opens the specified SPI bus. The Raspberry Pi has 2 channels, 0 and 1. The speed parameter is an integer in the range of 500,000 through 32,000,000 and represents the SPI clock speed in Hz.
 
 ```C
 int wiringPiSPISetup (int channel, int speed);
@@ -591,7 +608,7 @@ int wiringPiSPIxSetupMode(const int number, const int channel, const int speed, 
 
 ``number``: SPI number (typically 0, on Compute Module 0-7).  
 ``channel``: SPI channel (typically 0 or 1, on Compute Module 0-3).  
-``speed``: SPI clock.  
+``speed``: SPI clock speed in Hz (500,000 to 32,000,000).  
 ``mode``: SPI mode ([www.kernel.org/doc/Documentation/spi/spidev](https://www.kernel.org/doc/Documentation/spi/spidev)).  
 ``Return Value``:  File handle to the SPI bus, or -1 on error.
 
