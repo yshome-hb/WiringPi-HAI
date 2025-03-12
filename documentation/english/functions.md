@@ -4,15 +4,18 @@ The WiringPi-library enables access to the GPIO pins of the Raspberry Pi. In thi
 Since Version 3, extensions to the interface have been made again. In the case of new implementations, you should rely on the current / new functions.  
 The old [GPIO Sysfs Interface for Userspace](https://www.kernel.org/doc/Documentation/gpio/sysfs.txt) is no longer supported.
 
-**Attention:** This documentation is still in progress and therefore incomplete.
-The content of this documentation was created with care and to the best of our knowledge and belief. However, the authors do not guarantee the correctness, completeness and topicality of the information provided.The content of the documentation is used at your own risk.
-No liability is generally assumed for damage caused by material or intangible nature caused by the use or non-use of the information provided or by the use of incorrect and incomplete information.
+**Attention:**  
+
+This documentation is still in progress and therefore incomplete.
+The content of this documentation was created with care and to the best of our knowledge. However, the authors do not guarantee the correctness, completeness and topicality of the information provided.The content of the documentation is used at your own risk.
+
+No liability is assumed for material or intangible damage caused by the use or non-use of the information provided or by the use of incorrect or incomplete information.
 
 ## Installation
 
-Unfortunately, the WiringPi Library is not directly available in Raspberry Pi OS, so it must be installed manually. Either download a Debian package or create it manually.
+The WiringPi Library is not directly available in Raspberry Pi OS, so it must be installed manually. Either download a Debian package or create it manually.
 
-**Create Debian package:**
+**Create Debian package:**  
 
 ```bash
 sudo apt install git
@@ -22,24 +25,23 @@ cd WiringPi
 mv debian-template/wiringpi-3.0-1.deb .
 ```
 
-**Install Debian package:**
+**Install Debian package:**  
 
 ```bash
 sudo apt install ./wiringpi-3.0-1.deb
 ```
 
-**Uninstall Debian package:**
+**Uninstall Debian package:**  
 
 ```bash
 sudo apt purge wiringpi
 ```
 
-
 ## PIN Numbering and Raspberry Pi Models
 
-GPIOs: https://pinout.xyz/pinout/wiringpi
+GPIOs: [https://pinout.xyz/pinout/wiringpi](https://pinout.xyz/pinout/wiringpi)
 
-**Raspberry Pi Models with 40-Pin GPIO J8 Header:**
+**Raspberry Pi Models with 40-Pin GPIO J8 Header:**  
 
  | BCM | WPI |   Name  | Physical  | Name    | WPI | BCM |
  |-----|-----|---------|:---------:|---------|-----|-----|
@@ -64,8 +66,7 @@ GPIOs: https://pinout.xyz/pinout/wiringpi
  |  26 |  25 | GPIO.25 | 37  I  38 | GPIO.28 | 28  | 20  |
  |     |     |     GND | 39  I  40 | GPIO.29 | 29  | 21  |
 
-
-**Raspberry Pi 1B Rev. 2 with 26-Pin GPIO P1 Header:**
+**Raspberry Pi 1B Rev. 2 with 26-Pin GPIO P1 Header:**  
 
  | BCM | WPI |   Name  | Physical |  Name    | WPI | BCM |
  |-----|-----|---------|:--------:|----------|-----|-----|
@@ -83,9 +84,7 @@ GPIOs: https://pinout.xyz/pinout/wiringpi
  |  11 |  14 |    SCLK | 23 I 24  |  CE0     | 10  | 8   |
  |     |     |     GND | 25 I 26  |  CE1     | 11  | 7   |
 
-
-
-**Raspberry Pi 1B Rev. 1 with 26-Pin GPIO P1 Header:**
+**Raspberry Pi 1B Rev. 1 with 26-Pin GPIO P1 Header:**  
 
  | BCM | WPI |   Name  | Physical |  Name   | WPI | BCM |
  |-----|-----|---------|:--------:|---------|-----|-----|
@@ -103,22 +102,24 @@ GPIOs: https://pinout.xyz/pinout/wiringpi
  |  11 |  14 |    SCLK | 23 I 24  | CE0     | 10  | 8   |
  |     |     |     GND | 25 I 26  | CE1     | 11  | 7   |
 
-
 **References**  
+
 Note the different pin numbers and the I2C0 at Raspberry Pi 1B Rev. 1!
 
 ## Initialization
+
 At the beginning, the WiringPi Library must be initialized.
 To do this, one of the following functions must be called up:
 
 Outdated functions (no longer use):
 
-``wiringPiSetup`` uses Wiringpi numbering (WPI) of the GPIO's and accesses the GPIO register directly.  
+``wiringPiSetup`` uses WiringPi numbering (WPI) of the GPIOs and accesses the GPIO register directly.  
 ``wiringPiSetupGpio`` uses BCM numbering of the GPIOs and accesses the GPIO registers directly.  
 ``wiringPiSetupPhys`` uses physical PIN numbering of the GPIOs and accesses the GPIO register directly.  
-``wiringPiSetupSys`` uses BCM numbering and calls the new function ``wiringPiSetupGpioDevice`` from version 3.4 to ensure compatibility with new core. In version 2, the virtual file system/SYS/Class/GPIO was used. However, the GPIO's exports had to take place externally before the initialization! The function is outdated and should not be used!
+``wiringPiSetupSys`` uses BCM numbering and calls the new function ``wiringPiSetupGpioDevice`` from version 3.4 to ensure compatibility with new core. In version 2, the virtual file system/SYS/Class/GPIO was used. However, the GPIOs exports had to take place externally before the initialization! The function is outdated and should not be used!
 
 **Since Version 3.4:**  
+
 ``wiringPiSetupPinType`` decides whether WiringPi, BCM or physical PIN numbering is now used, based on the parameter pinType. So it combines the first 3 setup functions together.
 ``wiringPiSetupGpioDevice`` is the successor to the ``wiringPiSetupSys`` function and now uses "GPIO Character Device Userspace API" in version 1 (from kernel 5.10). More information can be found at [docs.kernel.org/driver-api/gpio/driver.html](https://docs.kernel.org/driver-api/gpio/driver.html) on the parameter pintype, it is again decided which pin numbering is used.
 In this variant, there is no direct access to the GPIO memory (DMA) but rather through a kernel interface that is available with user permissions. The disadvantage is the limited functionality and low performance.
@@ -128,16 +129,18 @@ In this variant, there is no direct access to the GPIO memory (DMA) but rather t
 ### wiringPiSetup V2 (outdated)
 
 Inializating WiringPi in a classic way.
->>>
+
+**Notice:** This function is deprecated and should not be used in modern implementations.
+
 ```C
-int wiringPiSetupGpio(void)
-```  
+int wiringPiSetupGpio(void);
+```
 
 ``Return Value``:  Error status
 
->  0 ... No Error  
+> 0 ... No Error  
 
-**Example:**
+**Example:**  
 
 ```C
 wiringPiSetupGpio();
@@ -146,22 +149,23 @@ wiringPiSetupGpio();
 ### wiringPiSetup V3
 
 Initializing WiringPi.  
->>>
+
 ```C
-int wiringPiSetupPinType(enum WPIPinType pinType)
+int wiringPiSetupPinType(enum WPIPinType pinType);
 ```  
 
 ``pinType``: Type of PIN numbering...
- - `WPI_PIN_BCM` ... BCM-Numbering  
- - `WPI_PIN_WPI` ... WiringPi-Numbering  
- - `WPI_PIN_PHYS` ... Physical Numbering  
+
+- `WPI_PIN_BCM` ... BCM-Numbering  
+- `WPI_PIN_WPI` ... WiringPi-Numbering  
+- `WPI_PIN_PHYS` ... Physical Numbering  
 
 ``Return Value``:  Error status  
 
 > 0 ... No Error  
 > -1 ... Invalid Parameter Error
 
-**Example:**
+**Example:**  
 
 ```C
 wiringPiSetupPinType(WPI_PIN_BCM);
@@ -172,13 +176,14 @@ wiringPiSetupPinType(WPI_PIN_BCM);
 ### pinMode
 
 Changes the mode of a GPIO pins.
->>>
+
 ```C
-void pinMode(int pin, int mode)
+void pinMode(int pin, int mode);
 ```  
 
 ``Pin``: The desired PIN (BCM, Wiringpi or PIN number).  
 ``Mode``: The desired pin mode...
+
 - `INPUT` ... Input
 - `OUTPUT` ... Output
 - `PWM_OUTPUT` ... PWM output (frequency and pulse break ratio can be configured)
@@ -187,42 +192,44 @@ void pinMode(int pin, int mode)
 - `GPIO_CLOCK` ... Frequency output
 - `PM_OFF` ... Release
 
-**Example:**
+**Example:**  
 
 ```C
 pinMode(17, OUTPUT);
 ```
 
-**Support:**  
-`PM_OFF` resets the GPIO (Input) and releases it. PWM is stopped.
-Raspberry Pi 5 does not support the PWM Bal (Balanced) mode. The MS mode is activated at `PWM_OUTPUT`.
-`GPIO_CLOCK` is currently not yet supported in Raspberry Pi 5 (RP1).
+**Notice:**  
+
+- `PM_OFF` resets the GPIO (Input) and releases it. PWM is stopped.
+- Raspberry Pi 5 does not support the PWM Bal (Balanced) mode. The MS mode is activated at `PWM_OUTPUT`.
+- `GPIO_CLOCK` is currently not yet supported in Raspberry Pi 5 (RP1).
 
 **PWM Exit**  
+
 `PWM_OUTPUT` Activates the specified PWM output with the settings:
- - Mode: BAL-Balanced (Pi0-4), MS-Mark/Space (Pi 5)
- - Range: 1024  
- - Divider: 32  
+
+- Mode: BAL-Balanced (Pi0-4), MS-Mark/Space (Pi 5)
+- Range: 1024  
+- Divider: 32  
 
 In order to make sure that the output starts without an active frequency, you should execute ``pwmWrite(PWM_GPIO, 0);`` before activating.
 After that, the corresponding clock and range values ​​can be adapted, without a frequency already being output unintentionally.
 
-### pinMode
-
 ### digitalWrite
 
 Set the value of a GPIO pin.
->>>
+
 ```C
-void digitalWrite(int pin, int value)
+void digitalWrite(int pin, int value);
 ```
 
 ``pin``: The desired Pin (BCM-, Wiringpi- or PIN number).  
 ``value``: The logical value...
- - `HIGH` ... Value 1 (electrical ~ 3.3 V)  
- - `LOW` ... Value 0 (electrical ~0 V / GND)
 
-**Example:**
+- `HIGH` ... Value 1 (electrical ~ 3.3 V)  
+- `LOW` ... Value 0 (electrical ~0 V / GND)
+
+**Example:**  
 
 ```C
 pinMode(17, OUTPUT);
@@ -232,18 +239,19 @@ DigitalWrite(17, HIGH);
 ### pullUpDnControl
 
 Changes the internal pull-up / pull-down resistance.
->>>
+
 ```C
-void pullUpDnControl (int pin, int pud)
+void pullUpDnControl (int pin, int pud);
 ```  
 
 ``pin``: The desired Pin (BCM-, WiringPi-, or Pin-number).  
 ``pud``: The resistance type...
- - `PUD_OFF` ... No resistance   
- - `PUD_UP` ... Pull-Up resistance (~50 kOhm)
- - `PUD_DOWN` ... Pull-Down resistance (~50 kOhm)
 
-**Example:**
+- `PUD_OFF` ... No resistance
+- `PUD_UP` ... Pull-Up resistance (~50 kOhm)
+- `PUD_DOWN` ... Pull-Down resistance (~50 kOhm)
+
+**Example:**  
 
 ```C
 pullUpDnControl(17, PUD_DOWN);
@@ -252,9 +260,9 @@ pullUpDnControl(17, PUD_DOWN);
 ### digitalRead
 
 Reads the value of one GPIO-Pin.
->>>
+
 ```C
-int digitalRead(int pin)
+int digitalRead(int pin);
 ```
 
 ``pin``: The desired Pin (BCM-, WiringPi-, or Pin-number).  
@@ -263,7 +271,7 @@ int digitalRead(int pin)
 > `HIGH` ... Value 1  
 > `LOW` ... Value 0  
 
-**Example:**
+**Example:**  
 
 ```C
 pinMode(17, INPUT);
@@ -283,34 +291,32 @@ if (value == HIGH)
 
 Registers an Interrupt Service Routine (ISR) / function that is executed on edge detection.
 
->>>
 ```C
 int wiringPiISR(int pin, int mode, void (*function)(void));
 ```
 
 ``pin``: The desired Pin (BCM-, WiringPi-, or Pin-number).  
 ``mode``: Triggering edge mode...
- - `INT_EDGE_RISING` ... Rising edge  
- - `INT_EDGE_FALLING` ... Falling edge  
- - `INT_EDGE_BOTH` ... Rising and falling edge  
+
+- `INT_EDGE_RISING` ... Rising edge
+- `INT_EDGE_FALLING` ... Falling edge
+- `INT_EDGE_BOTH` ... Rising and falling edge
 
 ``*function``: Function pointer for ISR  
 ``Return Value``:
- 
+
 > 0 ... Successful
 
 <!-- > <>0 ... Error not implemented at the moment. -->
 
-For example see **wiringPiISRStop**.
-
+For example see **[wiringPiISRStop](#wiringpiisrstop)**.
 
 ### wiringPiISRStop
 
 Deregisters the Interrupt Service Routine (ISR) on a Pin.
 
->>>
 ```C
-int wiringPiISRStop (int pin)
+int wiringPiISRStop (int pin);
 ```
 
 ``pin``: The desired Pin (BCM-, WiringPi-, or Pin-number).  
@@ -320,8 +326,7 @@ int wiringPiISRStop (int pin)
 
 <!-- > <>0 ... Error not implemented at the moment. -->
 
-
-**Example:**
+**Example:**  
 
 ```C
 static volatile int edgeCounter;
@@ -337,20 +342,18 @@ int main (void) {
     wiringPiISR (17, INT_EDGE_RISING, &isr);
 
     Sleep(1000);
-    printf("%d rinsing edges\n", );
+    printf("%d rising edges\n", edgeCounter);
 
     wiringPiISRStop(17);
 }
 ```
 
-
 ### waitForInterrupt
 
-Waits for a previously defined interrupt (wiringPiISR) on the GPIO pin. This function should not be used.
+Waits for a previously defined interrupt ([wiringPiISR](#wiringpiisr)) on the GPIO pin. This function should not be used.
 
->>>
 ```C
-int  waitForInterrupt (int pin, int mS)
+int  waitForInterrupt (int pin, int mS);
 ```
 
 ``pin``: The desired Pin (BCM-, WiringPi-, or Pin-number).  
@@ -360,17 +363,16 @@ int  waitForInterrupt (int pin, int mS)
 > -1 ... GPIO Device Chip not successfully opened  
 > -2 ... ISR was not registered (WiringPiISR must be called)
 
-
 ## Hardware Pulse Width Modulation (PWM)
 
-Available GPIOs:  https://pinout.xyz/pinout/pwm
+Available GPIOs:  [https://pinout.xyz/pinout/pwm](https://pinout.xyz/pinout/pwm)
 
 ### pwmWrite
 
 Changes the PWM value of the pin. Possible values ​​are 0 -> { PWM Range }.
->>>
+
 ```C
-pwmWrite(int pin, int value)
+pwmWrite(int pin, int value);
 ```
 
 ``pin``: The desired Pin (BCM-, WiringPi-, or Pin-number).  
@@ -381,9 +383,9 @@ pwmWrite(int pin, int value)
 Set the range for the PWM value of all PWM pins or PWM channels.
 19200 / divisor / range applies to the calculation of the PWM frequency (m/s mode).
 If ``pinMode(pin, PWM_OUTPUT)`` The value 1024 is automatically set for the divider.
->>>
+
 ```C
-pwmSetRange (unsigned int range)
+pwmSetRange (unsigned int range);
 ```
 
 ``range``: PWM Range
@@ -391,59 +393,61 @@ pwmSetRange (unsigned int range)
 ### pwmSetMode
 
 Set the PWM mode for all PWM pins or PWM channels.
->>>
+
 ```C
 pwmSetMode(int mode);
 ```
 
 ``mode``: PWM Mode
- - `PWM_MODE_MS` ... Mark / Space Mode (PWM Fixed Frequency)  
- - `PWM_MODE_BAL` ... Balanced Mode (PWM Variable Frequency)
 
-**Support:**  
+- `PWM_MODE_MS` ... Mark / Space Mode (PWM Fixed Frequency)  
+- `PWM_MODE_BAL` ... Balanced Mode (PWM Variable Frequency)
+
+**Notice:**  
+
 Raspberry Pi 5 does not support the balanced mode!
-
 
 ### pwmSetClock
 
 Set the divider for the basic PWM. The base clock is standardized for all Raspberry Pi's to 1900 kHz.
 19200 / divisor / range applies to the calculation of the PWM frequency (m/s mode).
-If ``pinmode(pin, PWM_OUTPUT)`` The value 32 is automatically set for the divider.
->>>
+If ``pinMode(pin, PWM_OUTPUT)`` The value 32 is automatically set for the divider.
+
 ```C
-pwmSetClock(int divisor)
+pwmSetClock(int divisor);
 ```
 
-``divisor``: Divider (Raspberry Pi 4: 1-1456, all other 1-4095) 
+``divisor``: Divider (Raspberry Pi 4: 1-1456, all other 1-4095)
 
 - `0` ... Deactivates the PWM clock on Raspberry Pi 5, with other Pi's divisor `1` is used
 
-**Support:**  
+**Notice:**  
+
 Due to its higher internal basic clock, the Raspberry Pi 4 only has a setting range of `1 - 1456`.
 Otherwise, `0 - 4095` applies to a valid divider.
 
-**Example:**
+**Example:**  
 
 ```C
 int main (void) {
-    wiringPiSetupGpio() ;
+    wiringPiSetupGpio();
 
     pwmSetRange(1024);
     pwmSetClock(35);
 
     pwmWrite(18, 512);
-    
+
+     // Notice: PWM_BAL_OUTPUT NOT supported on Pi 5
     pinMode(18, PWM_MS_OUTPUT);
-    
+
     double freq = 19200.0 / (double)pwmc / (double)pwmr;
-    
+
     printf("PWM 50%% @ %g kHz", freq);
     delay(250);
-    
+
     pinMode(18, PM_OFF);
 }
 ```
-
 
 ## I2C - Bus
 
@@ -453,18 +457,15 @@ int main (void) {
 
 Open the default I2C bus on the Raspberry Pi and addresses the specified device / slave.
 
->>>
 ```C
-wiringPiI2CSetup(const int devId)
+wiringPiI2CSetup(const int devId);
 ```
 
-``devId``: I2C-Gerät / Slave Adresse.  
-``Return Value``:  File Handle to I2C-Bus  
+``devId``: I2C device / slave address.  
+``Return Value``: File handle to I2C bus, or -1 on error.
 
-> -1 ... Error or EXIT (Programm termination)
+**Example**  
 
-**Example**
->>>
 ```C
 int fd = wiringPiI2CSetup(0x20);
 ```
@@ -473,33 +474,41 @@ int fd = wiringPiI2CSetup(0x20);
 
 Opens the specified I2C bus and addresses the specified I2C device / slave.
 
->>>
 ```C
-wiringPiI2CSetupInterface(const char *device, int devId)
+wiringPiI2CSetupInterface(const char *device, int devId);
 ```
 
-``devId``: I2C-Gerät / Slave Adresse.  
-``Return Value``:  File Handle to I2C-Bus 
+``devId``: I2C device / slave address.  
+``Return Value``: File handle to I2C bus, or -1 on error.
 
-> -1 ... Error or EXIT (Programm termination)
+**Example**  
 
-**Example**
->>>
 ```C
 int fd = wiringPiI2CSetupInterface("/dev/i2c-1", 0x20);
 ```
 
+### wiringPiI2CWrite
 
-### wiringPiI2CWrite / wiringPiI2CWriteReg8 / wiringPiI2CWriteReg16 / wiringPiI2CWriteBlockData
+Simple device write. Some devices accept data this way without needing to access any internal registers.
+
+### wiringPiI2CWriteReg8
+
+Writes a 8-bit data value into the device register indicated.
+
+### wiringPiI2CWriteReg16
+
+Writes a 16-bit data value into the device register indicated.
+
+### wiringPiI2CWriteBlockData
 
 ...
 
 ### wiringPiI2CRawWrite
 
 Writing data about an I2C slave.
->>>
+
 ```C
-int wiringPiI2CRawWrite(int fd, const uint8_t *values, uint8_t size)
+int wiringPiI2CRawWrite(int fd, const uint8_t *values, uint8_t size);
 ```
 
 ``fd``: File Handle.  
@@ -507,8 +516,8 @@ int wiringPiI2CRawWrite(int fd, const uint8_t *values, uint8_t size)
 ``size``: Number of bytes of the source buffer that should be written.  
 ``Return Value``:  Number of bytes that were written.
 
-**Example**
->>>
+**Example**  
+
 ```C
 int fd = wiringPiI2CSetup(I2C_ADDR);
 
@@ -534,9 +543,9 @@ else {
 ### wiringPiI2CRawRead
 
 Reading data from an I2C slave.
->>>
+
 ```C
-int wiringPiI2CRawRead(int fd, uint8_t *values, uint8_t size)
+int wiringPiI2CRawRead(int fd, uint8_t *values, uint8_t size);
 ```
 
 ``fd``: File Handle.  
@@ -544,8 +553,8 @@ int wiringPiI2CRawRead(int fd, uint8_t *values, uint8_t size)
 ``size``: Number of bytes that are to be read into the target buffer.  
 ``Return Value``:  Number of bytes that were read.
 
-**Example**
->>>
+**Example**  
+
 ```C
 int fd = wiringPiI2CSetup(I2C_ADDR);
 
@@ -564,32 +573,30 @@ else {
 }
 ```
 
-
 ## SPI - Bus
 
 Functions that start with  ``wiringPiSPIx`` are new since version 3, allowing the SPI bus number to be specified. This is especially useful for the Compute Module, which has multiple SPI buses (0-7). The old functions remain available, but they always refer to SPI bus 0, which is available on the 40 pin GPIO connector.
-
 
 ### wiringPiSPISetup / wiringPiSPISetupMode / wiringPiSPIxSetupMode
 
 Opens the specified SPI bus.
 
->>>
 ```C
-int wiringPiSPISetup (int channel, int speed)
-int wiringPiSPISetup (int channel, int speed, int mode)
-int wiringPiSPIxSetupMode(const int number, const int channel, const int speed, const int mode)
+int wiringPiSPISetup (int channel, int speed);
+
+int wiringPiSPISetup (int channel, int speed, int mode);
+
+int wiringPiSPIxSetupMode(const int number, const int channel, const int speed, const int mode);
 ```
 
-``number``: SPI muber (typically 0, on Compute Module 0-7).  
+``number``: SPI number (typically 0, on Compute Module 0-7).  
 ``channel``: SPI channel (typically 0 or 1, on Compute Module 0-3).  
 ``speed``: SPI clock.  
-``mode``: SPI mode (https://www.kernel.org/doc/Documentation/spi/spidev).  
-``Return Value``:  File handle to the SPI bus
-> -1 ... Error or EXIT (Programm termination)
+``mode``: SPI mode ([www.kernel.org/doc/Documentation/spi/spidev](https://www.kernel.org/doc/Documentation/spi/spidev)).  
+``Return Value``:  File handle to the SPI bus, or -1 on error.
 
-**Example**
->>>
+**Example**  
+
 ```C
 const int spiChannel = 1;
 const int spiSpeedInit = 250000; // Hz
@@ -604,25 +611,26 @@ if ((hSPI = wiringPiSPISetup (spiChannel, spiSpeed)) < 0) {
 wiringPiSPIClose(spiChannel);
 ```
 
-### wiringPiSPIDataRW / wiringPiSPIxDataRW 
+### wiringPiSPIDataRW / wiringPiSPIxDataRW
 
 A synchronous fullduplex write and read operation is performed on the opened SPI bus. In the process, the sent data is overwritten by the received data.
 
->>>
 ```C
-int wiringPiSPIDataRW (int channel, unsigned char *data, int len)
-int wiringPiSPIxDataRW (const int number, const int channel, unsigned char *data, const int len)
+int wiringPiSPIDataRW (int channel, unsigned char *data, int len);
+
+int wiringPiSPIxDataRW (const int number, const int channel, unsigned char *data, const int len);
 ```
 
-``number``: SPI muber (typically 0, on Compute Module 0-7).  
+``number``: SPI number (typically 0, on Compute Module 0-7).  
 ``channel``: SPI channel (typically 0 or 1, on Compute Module 0-3).  
 ``data``: Buffer  
 ``len``: Size of ``data`` buffer or data size.  
-``Return Value``:  Return Value of ``ioctl`` function (https://man7.org/linux/man-pages/man2/ioctl.2.html)  
-<0 ... Error, see ``errno`` for error number.
+``Return Value``:  Return Value of ``ioctl`` function ([https://man7.org/linux/man-pages/man2/ioctl.2.html](https://man7.org/linux/man-pages/man2/ioctl.2.html))
 
-**Example**
->>>
+> 0 ... Error, see ``errno`` for error number.
+
+**Example**  
+
 ```C
 const int spiChannel = 1;
 const int spiSpeedInit = 250000; // Hz
@@ -637,8 +645,9 @@ int returnvalue;
 spiData[0] = 0b11010000;
 spiData[1] = 0;
 spiData[2] = 0;
+
 returnvalue = wiringPiSPIxDataRW(0, spiChannel, spiData, 3);
-if (returnvalue<=0) {
+if (returnvalue <= 0) {
   printf("SPI transfer error: %d\n", errno);
 }
 
@@ -649,24 +658,25 @@ wiringPiSPIxClose(0, spiChannel);
 
 Returns the file handle to the opened SPI bus.
 
->>>
 ```C
-int wiringPiSPIGetFd(int channel)
-int wiringPiSPIxGetFd(const int number, int channel)
+int wiringPiSPIGetFd(int channel);
+
+int wiringPiSPIxGetFd(const int number, int channel);
 ```
 
-``number``: SPI muber (typically 0, on Compute Module 0-7).  
+``number``: SPI number (typically 0, on Compute Module 0-7).  
 ``channel``: SPI channel (typically 0 or 1, on Compute Module 0-3).  
-``Return Value``:  File handle to the SPI bus 
+``Return Value``:  File handle to the SPI bus
+
 > -1 ... Invalid or not opened
 
-**Example**
->>>
+**Example**  
+
 ```C
 const int spiChannel = 1;
 const int spiSpeedInit = 250000; // Hz
-int hSPI;
 
+int hSPI;
 if ((hSPI = wiringPiSPISetup (spiChannel, spiSpeed)) < 0) {
     //error
 }
