@@ -299,17 +299,16 @@ extern          void digitalWriteByte2   (int value) ;
 // Interrupts
 // status returned from waitForInterruptV2    V3.16
 struct WPIWfiStatus {
-    int id;
-    int status;         // -1: error, 0: timeout, 1: valud values for edge and timeStamp_us
-    unsigned int pin;  // gpio as BCM pin
-    int edge;           // One of INT_EDGE_FALLING or INT_EDGE_RISING	
-    long long int timeStamp_us;     // time stamp in microseconds, when interrupt happened
+    int statusOK;               // -1: error (return of 'poll' command), 0: timeout, 1: irq processed, next data values are valid if needed
+    unsigned int pinBCM;        // gpio as BCM pin
+    int edge;                   // INT_EDGE_FALLING or INT_EDGE_RISING
+    long long int timeStamp_us; // time stamp in microseconds
 };
 
-extern int  waitForInterrupt    (int pin, int ms) ;
+//extern int  waitForInterrupt    (int pin, int ms);  unknown if still working, disabled for V3.16, please contact developer via github
 extern int  wiringPiISR         (int pin, int mode, void (*function)(void)) ;
-extern struct WPIWfiStatus  waitForInterrupt2(int pin, int edgeMode, int ms, unsigned long debounce_period_us) ;   // V3.16 phylax
-extern int  wiringPiISR2       (int pin, int mode, void (*function)(struct WPIWfiStatus wfiStatus), unsigned long debounce_period_us) ;  // v3.16 phylax
+extern struct WPIWfiStatus  waitForInterrupt2(int pin, int edgeMode, int ms, unsigned long debounce_period_us) ;   // V3.16
+extern int  wiringPiISR2       (int pin, int mode, void (*function)(struct WPIWfiStatus wfiStatus), unsigned long debounce_period_us) ;  // V3.16
 extern int  wiringPiISRStop     (int pin) ;  //V3.2
 extern int  waitForInterruptClose(int pin) ; //V3.2 legacy use wiringPiISRStop
 

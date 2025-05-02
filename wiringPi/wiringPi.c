@@ -2685,7 +2685,7 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
   
   /* open gpio */
   if (wiringPiGpioDeviceGetFd()<0) {
-    wfiStatus.status = -1;
+    wfiStatus.statusOK = -1;
     return wfiStatus;
   }
   
@@ -2701,7 +2701,7 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
       if (wiringPiDebug) {
         printf ("waitForInterrupt2: edgeMode INT_EDGE_SETUP - exiting\n") ;
       }
-      wfiStatus.status = -1;
+      wfiStatus.statusOK = -1;
       return wfiStatus;
     case INT_EDGE_FALLING:
       config.flags |= GPIO_V2_LINE_FLAG_EDGE_FALLING;
@@ -2734,7 +2734,7 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
   status = ioctl(chipFd, GPIO_V2_GET_LINE_IOCTL, &req);
   if (status == -1) {
     ReportDeviceError("GPIO_V2_GET_LINE_IOCTL", pin , strmode, status);
-    wfiStatus.status = -1;
+    wfiStatus.statusOK = -1;
     return wfiStatus;
   }
 
@@ -2763,24 +2763,23 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
   polls.revents = 0;
 
   ret = poll(&polls, 1, ms);
-  
   if (ret < 0) {
     if (wiringPiDebug) { 
       fprintf(stderr, "waitForInterrupt2: ERROR: poll returned=%d\n", ret);
     }
-    wfiStatus.status = -1;
+    wfiStatus.statusOK = -1;
   } else if (ret == 0) { 
     if (wiringPiDebug) {
       fprintf(stderr, "waitForInterrupt2: timeout: poll returned zero\n");
     }
-    wfiStatus.status = 0;
+    wfiStatus.statusOK = 0; // timeout
   }
   else {
     if (wiringPiDebug) {
       printf ("waitForInterrupt2: IRQ line %d received %d, fd=%d\n", pin, ret, isrFds[pin]);
     }
     if (polls.revents & POLLIN) {  
-    /* read event data */
+      /* read event data */
       readret = read(isrFds [pin], &evdata, sizeof(evdata));
       if (readret == sizeof(evdata)) {
         if (wiringPiDebug) {
@@ -2801,16 +2800,15 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
             break;
 		    }
         wfiStatus.timeStamp_us = evdata.timestamp_ns / 1000LL;    // nanoseconds u64 to microseconds
-        wfiStatus.pin = evdata.offset;
-        wfiStatus.id = evdata.id;
-        wfiStatus.status = 1;
+        wfiStatus.pinBCM = evdata.offset;
+        wfiStatus.statusOK = 1;
       }
       else {
-        wfiStatus.status = -1;
+        wfiStatus.statusOK = -1;
       }
     }
     else {
-        wfiStatus.status = -1;   
+        wfiStatus.statusOK = -1;
     }
   }
 
@@ -2833,7 +2831,7 @@ int waitForInterrupt (int pin, int ms) {
   }
   status = waitForInterrupt2(pin, edgeMode, ms, 0);
 
-  return  status.id;
+  return  status.statusOK;
 }
 
 /*
@@ -3015,8 +3013,8 @@ void *interruptHandlerV2(void *arg)
                     if (isrFunctionsV2[pin]) {
                         if (wiringPiDebug) 
                             printf( "interruptHandlerV2: GPIO EVENT at %llu on line %u (%u|%u) \n", evdat[i].timestamp_ns, evdat[i].offset, evdat[i].line_seqno, evdat[i].seqno);
-                        wfiStatus.status = 1;
-                        wfiStatus.pin = pin;
+                        wfiStatus.statusOK = 1;
+                        wfiStatus.pinBCM = pin;
                         switch (evdat[i].id) {
                             case GPIO_V2_LINE_EVENT_RISING_EDGE:
                                 wfiStatus.edge = INT_EDGE_RISING;
