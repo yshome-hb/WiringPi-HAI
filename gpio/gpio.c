@@ -177,7 +177,7 @@ void printgpio(const char* text) {
   }
 }
 
-static void wfi (UNU struct WPIWfiStatus wfiStatus) { 
+static void wfi (void) {
   globalCounter++;
   if(globalCounter>=iterations) {
     printgpio("finished\n");
@@ -217,7 +217,7 @@ void doWfi (int argc, char *argv [])
     timeoutSec = atoi(argv [5]);
   }
 
-  if (wiringPiISR (pin, mode, &wfi, 0) < 0)
+  if (wiringPiISR (pin, mode, &wfi) < 0)
   {
     fprintf (stderr, "%s: wfi: Unable to setup ISR: %s\n", argv [1], strerror (errno)) ;
     exit (1) ;
