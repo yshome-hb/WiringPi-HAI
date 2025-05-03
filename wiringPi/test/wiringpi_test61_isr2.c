@@ -12,6 +12,7 @@ int GPIO = 19;
 int GPIOIN = 26;
 const int ToggleValue = 4;
 float irq_timstamp_duration_ms = 0;
+float accuracy = 0.01;
 
 static volatile int globalCounter;
 volatile long long gStartTime, gEndTime;
@@ -56,6 +57,7 @@ static void ISR2(struct WPIWfiStatus wfiStatus) {
   wfiStatusOld = wfiStatus;
 }
 
+
 void digitalWriteBounce(int OUTpin, int value, int bounce) {
   digitalWrite(OUTpin, value);
   if (bounce>0) {
@@ -65,6 +67,16 @@ void digitalWriteBounce(int OUTpin, int value, int bounce) {
     digitalWrite(OUTpin, value);
   }
 }
+
+
+void DelayAndSumDuration(int ms, float* irq_timstamp_sum, const int doSum) {
+  delay(20);
+  if (doSum) {
+    *irq_timstamp_sum += irq_timstamp_duration_ms;
+  }
+  delay(ms-20);
+}
+
 
 double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
   int expected;
@@ -76,26 +88,17 @@ double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
   globalCounter = 0;
   printf("Start\n");
   digitalWriteBounce(OUTpin, HIGH, bounce);
-  delay(10);
-  delay(190);
+  delay(200);
+
   digitalWriteBounce(OUTpin, LOW, bounce);
-  delay(10);
-  if (INT_EDGE_BOTH == Edge) {
-    irq_timstamp_sum += irq_timstamp_duration_ms;
-  } 
-  delay(90); 
+  DelayAndSumDuration(100, &irq_timstamp_sum, INT_EDGE_BOTH == Edge);
+
   digitalWriteBounce(OUTpin, HIGH, bounce);
-  delay(10);  
-  if (INT_EDGE_RISING == Edge || INT_EDGE_BOTH == Edge) {
-    irq_timstamp_sum += irq_timstamp_duration_ms;
-  }
-  delay(190);
+  DelayAndSumDuration(200, &irq_timstamp_sum, INT_EDGE_RISING == Edge || INT_EDGE_BOTH == Edge);
+
   digitalWriteBounce(OUTpin, LOW, bounce);
-  delay(10);
-  if (INT_EDGE_FALLING == Edge || INT_EDGE_BOTH == Edge) {
-    irq_timstamp_sum += irq_timstamp_duration_ms;
-  }
-  delay(90);
+  DelayAndSumDuration(100, &irq_timstamp_sum, INT_EDGE_FALLING == Edge || INT_EDGE_BOTH == Edge);
+
   printf("Stop\n");
   int globalCounterCopy = globalCounter; 
 
@@ -111,9 +114,9 @@ double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
     char str[1024];
     float fTime = (gEndTime - gStartTime) / 1000.0;
     sprintf(str, "IRQ measured  %g msec (~%g expected)", fTime, timeExpected_ms);
-    CheckSameFloat(str, fTime, timeExpected_ms, timeExpected_ms*0.01);
+    CheckSameFloat(str, fTime, timeExpected_ms, timeExpected_ms*accuracy);
     sprintf(str, "IRQ timestamp %g msec (~%g expected)", irq_timstamp_sum, timeExpected_ms);
-    CheckSameFloat(str, irq_timstamp_sum, timeExpected_ms, timeExpected_ms*0.01);
+    CheckSameFloat(str, irq_timstamp_sum, timeExpected_ms, timeExpected_ms*accuracy);
     // new data struct
     CheckSame("GPIO IRQ pin", wfiStatusOld.pinBCM, INpin);
     if (INT_EDGE_FALLING==Edge || INT_EDGE_RISING==Edge) {
@@ -186,7 +189,23 @@ int main (void) {
 	printf("WiringPi GPIO test program 6b (using GPIO%d (output) and GPIO%d (input))\n", GPIO, GPIOIN);
 	printf("ISR and ISR2 test (WiringPi %d.%d)\n", major, minor);
 
-	wiringPiSetupGpio() ;
+	wiringPiSetupGpio();
+
+  int RaspberryPiModel, rev, mem, maker, overVolted;
+  piBoardId(&RaspberryPiModel, &rev, &mem, &maker, &overVolted);
+  CheckNotSame("Model: ", RaspberryPiModel, -1);
+  switch(RaspberryPiModel) {
+    case PI_MODEL_A:
+    case PI_MODEL_B:     //ARM=800MHz
+    case PI_MODEL_BP:
+    case PI_MODEL_AP:
+    case PI_MODEL_CM:
+      accuracy = 0.02;
+      break;
+    default:
+      accuracy = 0.01;
+      break;
+  }
 	if (!piBoard40Pin()) {
 		GPIO = 23;
 		GPIOIN = 24;
@@ -194,7 +213,7 @@ int main (void) {
 	int IRQpin = GPIOIN;
 	int OUTpin = GPIO;
 
-  wiringPiISR2(13, INT_EDGE_RISING, &ISR2, 0); // next pin
+  //wiringPiISR2(13, INT_EDGE_RISING, &ISR2, 0); // next pin
 	
   memset(&wfiStatusOld, 0, sizeof(wfiStatusOld));
 
@@ -202,7 +221,6 @@ int main (void) {
 	pinMode(OUTpin, OUTPUT);
 	digitalWrite (OUTpin, LOW) ;
 
- /// --------------------
   for (int bounce=0; bounce<=1; bounce++) {
     unsigned long bouncetime = 0;
     if (0==bounce) {
