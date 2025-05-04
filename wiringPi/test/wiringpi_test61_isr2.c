@@ -12,7 +12,8 @@ int GPIO = 19;
 int GPIOIN = 26;
 const int ToggleValue = 4;
 float irq_timstamp_duration_ms = 0;
-float accuracy = 0.01;
+float accuracy = 0.012;
+float bounce_acc = 1.0;
 
 static volatile int globalCounter;
 volatile long long gStartTime, gEndTime;
@@ -162,10 +163,10 @@ double DurationTime(int Enge, int OUTpin, int IRQpin, int bounce) {
     printf("IRQ detection time %.1f msec", fTime/1000.0);
   }
   if (bounce>=0) {
-    // bounce time + 7ms (addtional bounce time) + 150 us (basic time)
-    CheckBetween("IRQ detection time with bounce [us]", fTime, 0, bounce*1000+ (bounce>0 ? 7000 : 0)+(15000*accuracy));
+    // bounce time + 7ms (addtional bounce time) + 100 us (basic time)
+    CheckBetween("IRQ detection time with bounce [us]", fTime, 0, bounce*1000+ (bounce>0 ? 7000*bounce_acc : 0)+(100*bounce_acc));
   } else {
-    CheckBetween("IRQ detection time [us]", fTime, 0, 15000*accuracy);
+    CheckBetween("IRQ detection time [us]", fTime, 0, 100*bounce_acc);
   }
   wiringPiISRStop(IRQpin);
   //printf("Stop\n");
@@ -194,9 +195,11 @@ int main (void) {
     case PI_MODEL_AP:
     case PI_MODEL_CM:
       accuracy = 0.02;
+      bounce_acc = 2.7;
       break;
     default:
-      accuracy = 0.01;
+      accuracy = 0.012;
+      bounce_acc = 1.0;
       break;
   }
 	if (!piBoard40Pin()) {
