@@ -32,10 +32,12 @@ static void ISR(void) {
 }
 
 
-static void ISR2(struct WPIWfiStatus wfiStatus) { 
+
+static void ISR2(struct WPIWfiStatus wfiStatus, void* userdata) {
   struct timeval now;
   char strEdge[3][10] = {"unknown", "falling", "raising"};
   int strEdgeidx = 0; //default
+  int* localCounter = (int*) userdata;
 
   gettimeofday(&now, 0);
   if (0==gStartTime) {
@@ -44,6 +46,9 @@ static void ISR2(struct WPIWfiStatus wfiStatus) {
     gEndTime = now.tv_sec*1000000LL + now.tv_usec;
   }
   globalCounter++;
+  if (localCounter) {
+    (*localCounter)++;
+  }
   switch(wfiStatus.edge) {
     case INT_EDGE_FALLING: strEdgeidx = INT_EDGE_FALLING; break;
     case INT_EDGE_RISING:  strEdgeidx = INT_EDGE_RISING;  break;
@@ -53,8 +58,8 @@ static void ISR2(struct WPIWfiStatus wfiStatus) {
   } else {
     irq_timstamp_duration_ms = 0.0f;
   }
-  printf("ISR occured @ %lld us: statusOK=%d, pin=%u, edge=%s (%d), duration=%g ms\n", 
-    wfiStatus.timeStamp_us, wfiStatus.statusOK, wfiStatus.pinBCM, strEdge[strEdgeidx], wfiStatus.edge, irq_timstamp_duration_ms);
+  printf("ISR occured @ %lld us: statusOK=%d, pin=%u, edge=%s (%d), duration=%g ms, userdata=%p\n",
+    wfiStatus.timeStamp_us, wfiStatus.statusOK, wfiStatus.pinBCM, strEdge[strEdgeidx], wfiStatus.edge, irq_timstamp_duration_ms, userdata);
   wfiStatusOld = wfiStatus;
 }
 
@@ -79,7 +84,7 @@ void DelayAndSumDuration(int ms, float* irq_timstamp_sum, const int doSum) {
 }
 
 
-double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
+double StartSequence2(int Edge, int OUTpin, int INpin, int bounce, int* localCounter) {
   int expected;
   float timeExpected_ms;
   float irq_timstamp_sum = 0.0f;
@@ -87,6 +92,7 @@ double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
   gStartTime = 0;
   gEndTime = 0;
   globalCounter = 0;
+  *localCounter = 0;
   printf("Start\n");
   digitalWriteBounce(OUTpin, HIGH, bounce);
   delay(200);
@@ -101,7 +107,7 @@ double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
   DelayAndSumDuration(100, &irq_timstamp_sum, INT_EDGE_FALLING == Edge || INT_EDGE_BOTH == Edge);
 
   printf("Stop\n");
-  int globalCounterCopy = globalCounter; 
+  int globalCounterCopy = globalCounter;
 
   if (INT_EDGE_BOTH == Edge) {
     expected = 4;  
@@ -110,6 +116,9 @@ double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
     expected = 2;  
     timeExpected_ms = bounce ? 304: 300;
   }
+
+  CheckSame("Global counted IRQ", globalCounter, expected);
+  CheckSame("Userdata pointer / Local counted IRQ ", *localCounter, expected);
 
   if (globalCounter==expected) {
     char str[1024];
@@ -144,7 +153,7 @@ double DurationTime(int Enge, int OUTpin, int IRQpin, int bounce) {
   digitalWrite(OUTpin, INT_EDGE_RISING == Enge ? LOW : HIGH);
   if (bounce>=0) {
     printf("\nnew function, bounce time %d ms, %s :\n", bounce, strOp);
-    wiringPiISR2(IRQpin, Enge, &ISR2, bounce*1000);
+    wiringPiISR2(IRQpin, Enge, &ISR2, bounce*1000, NULL);
   } else {
     printf("\nclassic function, %s :\n", strOp);
     wiringPiISR(IRQpin, Enge, &ISR);
@@ -210,7 +219,7 @@ int main (void) {
 	int OUTpin = GPIO;
 
   //wiringPiISR2(13, INT_EDGE_RISING, &ISR2, 0); // next pin
-	
+	int localCounter;
   memset(&wfiStatusOld, 0, sizeof(wfiStatusOld));
 
 	pinMode(IRQpin, INPUT);
@@ -227,23 +236,23 @@ int main (void) {
     }
 
     printf("\nTesting IRQ @ GPIO%d with trigger @ GPIO%d rising\n", IRQpin, OUTpin);
-    wiringPiISR2(IRQpin, INT_EDGE_RISING, &ISR2, bouncetime);
+    wiringPiISR2(IRQpin, INT_EDGE_RISING, &ISR2, bouncetime, &localCounter);
     sleep(1);
-    StartSequence2(INT_EDGE_RISING, OUTpin, IRQpin, bounce);
+    StartSequence2(INT_EDGE_RISING, OUTpin, IRQpin, bounce, &localCounter);
     printf("Stopp IRQ\n");
     wiringPiISRStop(IRQpin);
 
     printf("\nTesting IRQ @ GPIO%d with trigger @ GPIO%d falling\n", IRQpin, OUTpin);
-    wiringPiISR2(IRQpin, INT_EDGE_FALLING, &ISR2, bouncetime);
+    wiringPiISR2(IRQpin, INT_EDGE_FALLING, &ISR2, bouncetime, &localCounter);
     sleep(1);
-    StartSequence2(INT_EDGE_FALLING, OUTpin, IRQpin, bounce);
+    StartSequence2(INT_EDGE_FALLING, OUTpin, IRQpin, bounce, &localCounter);
     printf("Stopp IRQ\n");
     wiringPiISRStop(IRQpin);
 
     printf("\nTesting IRQ @ GPIO%d with trigger @ GPIO%d both\n", IRQpin, OUTpin);
-    wiringPiISR2(IRQpin, INT_EDGE_BOTH, &ISR2, bouncetime);
+    wiringPiISR2(IRQpin, INT_EDGE_BOTH, &ISR2, bouncetime, &localCounter);
     sleep(1);
-    StartSequence2(INT_EDGE_BOTH, OUTpin, IRQpin, bounce);
+    StartSequence2(INT_EDGE_BOTH, OUTpin, IRQpin, bounce, &localCounter);
     printf("Stopp IRQ\n");
     wiringPiISRStop(IRQpin);
   }

@@ -491,7 +491,8 @@ static int isrFds [64] =
 
 // ISR Data
 static int chipFd = -1;
-static void (*isrFunctionsV2[64])(struct WPIWfiStatus) ;
+static void* isrUserdata[64];
+static void (*isrFunctionsV2[64])(struct WPIWfiStatus, void* userdata) ;
 static void (*isrFunctions [64])(void) ;
 static pthread_t isrThreads[64];
 static int isrEdgeMode[64];             // irq on rising/falling edge
@@ -2871,6 +2872,7 @@ int wiringPiISRStop (int pin) {
   isrFds [pin] = -1;
   isrFunctions[pin] = NULL;
   isrFunctionsV2[pin] = NULL;
+  isrUserdata[pin] = NULL;;
   isrDebouncePeriodUs[pin] = 0;
   
   /* -not closing so far - other isr may be using it - only close if no other is using - will code later
@@ -3036,7 +3038,7 @@ void *interruptHandlerV2(void *arg)
                         if (wiringPiDebug) {
                           printf( "interruptHandlerV2: call isr function\n");
                         }
-                        isrFunctionsV2[pin](wfiStatus);
+                        isrFunctionsV2[pin](wfiStatus, isrUserdata[pin]);
                         if (wiringPiDebug) {
                           printf( "interruptHandlerV2: return from isr function\n");
                         }
@@ -3073,7 +3075,7 @@ void *interruptHandlerV2(void *arg)
  *********************************************************************************
  */
 
-int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus), void (*functionClassic)(void), unsigned long debounce_period_us)
+int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus, void* userdata), void (*functionClassic)(void), unsigned long debounce_period_us, void* userdata)
 {
   const int maxpin = GetMaxPin();
 
@@ -3096,6 +3098,7 @@ int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiSta
   }
 
   isrFunctionsV2[pin] = function;
+  isrUserdata[pin] = userdata;
   isrFunctions[pin] = functionClassic;
   isrEdgeMode[pin] = edgeMode;
   isrDebouncePeriodUs[pin] = debounce_period_us;
@@ -3138,12 +3141,12 @@ int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiSta
 
 int wiringPiISR (int pin, int mode, void (*function)(void))
 {
-  return wiringPiISRInternal(pin, mode, NULL, function, 0);
+  return wiringPiISRInternal(pin, mode, NULL, function, 0, NULL);
 }
 
-int wiringPiISR2(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus), unsigned long debounce_period_us)
+int wiringPiISR2(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus, void* userdata), unsigned long debounce_period_us, void* userdata)
 {
-  return wiringPiISRInternal(pin, edgeMode, function, NULL, debounce_period_us);
+  return wiringPiISRInternal(pin, edgeMode, function, NULL, debounce_period_us, userdata);
 }
 
 /*
