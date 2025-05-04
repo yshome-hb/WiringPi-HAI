@@ -131,51 +131,44 @@ double StartSequence2(int Edge, int OUTpin, int INpin, int bounce) {
 }
 
 
-double DurationTime(int Enge, int OUTpin, int IRQpin, int new) {
+double DurationTime(int Enge, int OUTpin, int IRQpin, int bounce) {
   struct timeval now;
   double fTime = 0.0;
-
+  const char* strOp = INT_EDGE_RISING == Enge ? "rising" : "fallling";
   gStartTime = 0;
   gEndTime = 0;
   globalCounter = 0;
-  printf("Start\n");
+  //printf("Start\n");
 
-  if (INT_EDGE_RISING == Enge) {
-    digitalWrite(OUTpin, LOW);
-    if (new) { 
-      wiringPiISR2(IRQpin, INT_EDGE_RISING, &ISR2, 0);
-    } else {
-      wiringPiISR(IRQpin, INT_EDGE_RISING, &ISR);
-    }
-    sleep(1);
-    gettimeofday(&now, 0);
-    gStartTime = now.tv_sec*1000000LL + now.tv_usec;
-    digitalWrite(OUTpin, HIGH);  
-    delay(20);
-    digitalWrite(OUTpin, LOW);  
-   } else if (INT_EDGE_FALLING == Enge) {
-    digitalWrite(OUTpin, HIGH); 
-    if (new) {
-      wiringPiISR2(IRQpin, INT_EDGE_FALLING, &ISR2, 0);
-    } else {
-      wiringPiISR(IRQpin, INT_EDGE_FALLING, &ISR);
-    }
-    sleep(1);
-    gettimeofday(&now, 0);
-    gStartTime = now.tv_sec*1000000LL + now.tv_usec;    
-    digitalWrite(OUTpin, LOW);  
-  }
-
-  sleep(1);
-  fTime = (gEndTime - gStartTime);
-  printf("IRQ detect time %g usec", fTime);
-  if (fTime<2000 && fTime>0) {
-    printf("                          -> %spassed%s\n", COLORGRN, COLORDEF);
+  digitalWrite(OUTpin, INT_EDGE_RISING == Enge ? LOW : HIGH);
+  if (bounce>=0) {
+    printf("\nnew function, bounce time %d ms, %s :\n", bounce, strOp);
+    wiringPiISR2(IRQpin, Enge, &ISR2, bounce*1000);
   } else {
-    printf("                          -> %sfailed%s\n", COLORRED, COLORDEF);
+    printf("\nclassic function, %s :\n", strOp);
+    wiringPiISR(IRQpin, Enge, &ISR);
+  }
+  sleep(1);
+  gettimeofday(&now, 0);
+  gStartTime = now.tv_sec*1000000LL + now.tv_usec;
+  digitalWrite(OUTpin, INT_EDGE_RISING == Enge ? HIGH : LOW);
+  delay(20);
+  digitalWrite(OUTpin, LOW);
+  delay(20);
+  fTime = (gEndTime - gStartTime);
+  if (bounce<=0) {
+    printf("IRQ detection time %g usec", fTime);
+  } else {
+    printf("IRQ detection time %.1f msec", fTime/1000.0);
+  }
+  if (bounce>=0) {
+    // bounce time + 7ms (addtional bounce time) + 150 us (basic time)
+    CheckBetween("IRQ detection time with bounce [us]", fTime, 0, bounce*1000+ (bounce>0 ? 7000 : 0)+(15000*accuracy));
+  } else {
+    CheckBetween("IRQ detection time [us]", fTime, 0, 15000*accuracy);
   }
   wiringPiISRStop(IRQpin);
-
+  //printf("Stop\n");
   return fTime;
 }
 
@@ -252,20 +245,10 @@ int main (void) {
     wiringPiISRStop(IRQpin);
   }
 
-	for (int count=0; count<2; count++) {
-	  printf("\nclassic function:\n");
-    printf("=================\n");
-    printf("Measuring duration IRQ @ GPIO%d with trigger @ GPIO%d rising\n", IRQpin, OUTpin);
-	  DurationTime(INT_EDGE_RISING, OUTpin, IRQpin, 0);
-	  printf("Measuring duration IRQ @ GPIO%d with trigger @ GPIO%d falling\n", IRQpin, OUTpin);
-	  DurationTime(INT_EDGE_FALLING, OUTpin, IRQpin, 0);
-
-    printf("\nnew function:\n");
-    printf("===============\n");
-    printf("Measuring duration IRQ @ GPIO%d with trigger @ GPIO%d rising\n", IRQpin, OUTpin);
-	  DurationTime(INT_EDGE_RISING, OUTpin, IRQpin, 1);
-	  printf("Measuring duration IRQ @ GPIO%d with trigger @ GPIO%d falling\n", IRQpin, OUTpin);
-	  DurationTime(INT_EDGE_FALLING, OUTpin, IRQpin, 1);
+  printf("Measuring duration IRQ @ GPIO%d with trigger @ GPIO%d rising and falling\n", IRQpin, OUTpin);
+	for (int bounce=-1; bounce<=5; bounce++) {
+	  DurationTime(INT_EDGE_RISING, OUTpin, IRQpin, bounce);
+	  DurationTime(INT_EDGE_FALLING, OUTpin, IRQpin, bounce);
 	}
 	pinMode(OUTpin, INPUT);
 
