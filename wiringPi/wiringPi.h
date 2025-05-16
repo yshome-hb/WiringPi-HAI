@@ -178,9 +178,7 @@ struct wiringPiNodeStruct
            void   (*pinMode)          (struct wiringPiNodeStruct *node, int pin, int mode) ;
            void   (*pullUpDnControl)  (struct wiringPiNodeStruct *node, int pin, int mode) ;
            int    (*digitalRead)      (struct wiringPiNodeStruct *node, int pin) ;
-//unsigned int    (*digitalRead8)     (struct wiringPiNodeStruct *node, int pin) ;
            void   (*digitalWrite)     (struct wiringPiNodeStruct *node, int pin, int value) ;
-//         void   (*digitalWrite8)    (struct wiringPiNodeStruct *node, int pin, int value) ;
            void   (*pwmWrite)         (struct wiringPiNodeStruct *node, int pin, int value) ;
            int    (*analogRead)       (struct wiringPiNodeStruct *node, int pin) ;
            void   (*analogWrite)      (struct wiringPiNodeStruct *node, int pin, int value) ;

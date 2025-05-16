@@ -1624,8 +1624,6 @@ struct wiringPiNodeStruct *wiringPiFindNode (int pin)
 
 static         void pinModeDummy             (UNU struct wiringPiNodeStruct *node, UNU int pin, UNU int mode)  { return ; }
 static         void pullUpDnControlDummy     (UNU struct wiringPiNodeStruct *node, UNU int pin, UNU int pud)   { return ; }
-//static unsigned int digitalRead8Dummy        (UNU struct wiringPiNodeStruct *node, UNU int UNU pin)            { return 0 ; }
-//static         void digitalWrite8Dummy       (UNU struct wiringPiNodeStruct *node, UNU int pin, UNU int value) { return ; }
 static          int digitalReadDummy         (UNU struct wiringPiNodeStruct *node, UNU int UNU pin)            { return LOW ; }
 static         void digitalWriteDummy        (UNU struct wiringPiNodeStruct *node, UNU int pin, UNU int value) { return ; }
 static         void pwmWriteDummy            (UNU struct wiringPiNodeStruct *node, UNU int pin, UNU int value) { return ; }
@@ -1657,9 +1655,7 @@ struct wiringPiNodeStruct *wiringPiNewNode (int pinBase, int numPins)
   node->pinMode          = pinModeDummy ;
   node->pullUpDnControl  = pullUpDnControlDummy ;
   node->digitalRead      = digitalReadDummy ;
-//node->digitalRead8     = digitalRead8Dummy ;
   node->digitalWrite     = digitalWriteDummy ;
-//node->digitalWrite8    = digitalWrite8Dummy ;
   node->pwmWrite         = pwmWriteDummy ;
   node->analogRead       = analogReadDummy ;
   node->analogWrite      = analogWriteDummy ;
@@ -2231,27 +2227,6 @@ int digitalRead (int pin)
 
 
 /*
- * digitalRead8:
- *	Read 8-bits (a byte) from given start pin.
- *********************************************************************************
-
-unsigned int digitalRead8 (int pin)
-{
-  struct wiringPiNodeStruct *node = wiringPiNodes ;
-
-  if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
-    return 0 ;
-  else
-  {
-    if ((node = wiringPiFindNode (pin)) == NULL)
-      return LOW ;
-    return node->digitalRead8 (node, pin) ;
-  }
-}
- */
-
-
-/*
  * digitalWrite:
  *	Set an output bit
  *********************************************************************************
@@ -2333,32 +2308,6 @@ void digitalWrite (int pin, int value)
   }
 }
 
-
-/*
- * digitalWrite8:
- *	Set an output 8-bit byte on the device from the given pin number
- *********************************************************************************
-
-void digitalWrite8 (int pin, int value)
-{
-  struct wiringPiNodeStruct *node = wiringPiNodes ;
-
-  if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
-    return ;
-  else
-  {
-    if ((node = wiringPiFindNode (pin)) != NULL)
-      node->digitalWrite8 (node, pin, value) ;
-  }
-}
- */
-
-
-/*
- * pwmWrite:
- *	Set an output PWM value
- *********************************************************************************
- */
 
 void pwmWrite (int pin, int value)
 {
