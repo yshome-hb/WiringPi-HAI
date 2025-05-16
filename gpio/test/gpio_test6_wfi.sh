@@ -9,6 +9,7 @@ TIMEOUT=8
 iteration=0
 GPIOIN=26
 GPIOOUT=19
+DEBOUNCE=100000
 
 wait_with_timeout() {
     local pid=$1
@@ -27,6 +28,7 @@ wait_with_timeout() {
         toggle=$((1 - toggle))
         gpio -g write $GPIOOUT $toggle
         echo -n ${toggle}
+        sleep 0.2
         iteration=$((iteration + 1))
     done
 
@@ -39,7 +41,7 @@ wfi_test() {
     local set_iter=$2
     local set_iterOK=$3
 
-    #wfi test
+    #wfi call
     if [ $iteration -eq 0 ]; then
         gpio -g wfi $GPIOIN "$edge" &
     else
@@ -62,6 +64,48 @@ wfi_test() {
         fi
     else
         echo -e "${RED}wfi "$edge" failed (exit code $EXIT_CODE)${NC}"
+        UNITTEST_OK=false
+    fi
+}
+
+wfis_test() {
+    local edge=$1
+    local set_iter=$2
+    local set_iterOK=$3
+    local set_EXITCODE=$4
+
+    #wfis call
+    if [ $iteration -eq 0 ]; then
+        gpio -g wfis $GPIOIN "$edge" $DEBOUNCE &
+    else
+        gpio -g wfis $GPIOIN "$edge" $DEBOUNCE "$set_iter" &
+    fi
+    GPIO_PID=$!
+    wait_with_timeout "$GPIO_PID" "$TIMEOUT"
+    EXIT_CODE=$?
+    echo 
+    if [ $EXIT_CODE -lt 3 ]; then
+
+        if [ $EXIT_CODE -eq "$set_EXITCODE" ]; then
+
+            if [ "$set_iter" -gt 0 ]; then
+                if [ "$iteration" -eq "$set_iterOK" ]; then
+                    echo -e "${GREEN}wfis "$edge" $set_iter iteration passt (exit code $EXIT_CODE)${NC}"
+                else
+                    echo -e "${RED}wfis "$edge" failed, $iteration iterations of $set_iter is wrong${NC}"
+                    UNITTEST_OK=false
+                fi
+            else
+                echo -e "${GREEN}wfi "$edge" passt (exit code $EXIT_CODE)${NC}"
+            fi
+
+        else
+            echo -e "${RED}wfis "$edge" failed - wrong exit code $EXIT_CODE${NC}"
+            UNITTEST_OK=false
+        fi
+
+    else  # negativ
+        echo -e "${RED}wfis "$edge" failed (exit code $EXIT_CODE)${NC}"
         UNITTEST_OK=false
     fi
 }
@@ -106,6 +150,60 @@ else
     echo -e "${RED}wfi timeout failed (code $EXIT_CODE)${NC}"
     UNITTEST_OK=false
 fi
+
+
+echo 
+echo Unit test gpio GPIO${GPIOOUT} and GPIO${GPIOIN} - functions: mode, write, wfis
+echo ------------------------------------------------------------------
+echo 
+
+#prepare trigger out
+gpio -g mode $GPIOOUT out
+
+gpio -g write $GPIOOUT 1
+wfis_test "rising" 0 0 2
+
+gpio -g write $GPIOOUT 0
+wfis_test "falling" 0 0 1
+
+gpio -g write $GPIOOUT 1
+wfis_test "both" 0 0 1
+
+gpio -g write $GPIOOUT 0
+wfis_test "both" 0 0 2
+
+
+#wfi iteration test
+
+gpio -g write $GPIOOUT 0
+wfis_test "rising" 4 7 2
+
+gpio -g write $GPIOOUT 1
+wfis_test "falling" 4 8 1
+
+gpio -g write $GPIOOUT 0
+wfis_test "both" 3 3 2
+
+gpio -g write $GPIOOUT 1
+wfis_test "both" 3 4 1
+
+gpio -g write $GPIOOUT 0
+gpio -g mode $GPIOOUT in
+
+### #wfi timeout test
+gpio -g wfis $GPIOIN rising $DEBOUNCE 2 4 &
+GPIO_PID=$!
+wait_with_timeout "$GPIO_PID" "$TIMEOUT"
+EXIT_CODE=$?
+echo 
+if [ $EXIT_CODE -eq 255 ]; then
+    echo -e "${GREEN}wfi timeout passed (exit code $EXIT_CODE)${NC}"
+else
+    echo -e "${RED}wfi timeout failed (code $EXIT_CODE)${NC}"
+    UNITTEST_OK=false
+fi
+
+
 
 
 if [ ${UNITTEST_OK} = true ]; then

@@ -181,7 +181,7 @@ static void wfi (void) {
   globalCounter++;
   if(globalCounter>=globalIterations) {
     printgpio("finished\n");
-    exit (0) ; 
+    exit(0);
   } else {
     printgpioflush("I");
   }
@@ -193,15 +193,25 @@ static void wfi2(struct WPIWfiStatus wfiStatus, void* userdata) {
   (void)userdata;
   globalCounter++;
   if (globalCounter>=globalIterations) {
-    printgpio("finished\n");
-    exit(0);
+    switch(wfiStatus.edge) {
+      case INT_EDGE_FALLING:
+        printgpio("finished falling\n");
+        break;
+      case INT_EDGE_RISING:
+        printgpio("finished rising\n");
+        break;
+      default:
+        printgpio("finished\n");
+        break;
+    }
+    exit(wfiStatus.edge);
   } else {
     printgpioflush("I");
   }
 }
 
 
-int get_wfi_edge(const char* arg_cmd, const char* arg_mode) {
+int get_wfi_edge(const char* arg_cmd, const char* arg_mode, int exitcode) {
     if (strcasecmp (arg_mode, "rising")  == 0) {
     return INT_EDGE_RISING ;
   } else if (strcasecmp (arg_mode, "falling") == 0) {
@@ -210,7 +220,7 @@ int get_wfi_edge(const char* arg_cmd, const char* arg_mode) {
     return INT_EDGE_BOTH ;
   } else {
     fprintf (stderr, "%s: wfi: Invalid mode: %s. Should be rising, falling or both\n", arg_cmd, arg_mode) ;
-    exit (1);
+    exit(exitcode);
   }
 }
 
@@ -236,7 +246,7 @@ void doWfiInternal(const char* cmd, int pin, int mode, int interations, int time
   printgpio("wait for interrupt function call\n");
   for (int Sec=0; Sec<timeoutSec; ++Sec) {
     printgpioflush(".");
-    delay (999);
+    delay(999);
   }
   printgpio("\nstopping wait for interrupt\n");
   wiringPiISRStop(pin);
@@ -250,11 +260,11 @@ void doWfi(int argc, char *argv [])
 
   if (argc != 4 && argc != 5 && argc != 6) {
     fprintf (stderr, "Usage: %s wfi pin mode [interations] [timeout sec.]\n", argv [0]) ;
-    exit (1) ;
+    exit(1);
   }
 
   pin  = atoi (argv[2]) ;
-  mode = get_wfi_edge(argv[1], argv[3]);
+  mode = get_wfi_edge(argv[1], argv[3], 1);
   if (argc>=5) {
     interations = atoi(argv[4]);
   }
@@ -272,12 +282,12 @@ void doWfi2(int argc, char *argv [])
   int timeoutSec = 2147483647;
 
   if (argc != 4 && argc != 5 && argc != 6 && argc != 7) {
-    fprintf (stderr, "Usage: %s wfidb pin mode [debounce period microsec.] [interations] [timeout sec.]\n", argv [0]) ;
-    exit(1);
+    fprintf (stderr, "Usage: %s wfis pin mode [debounce period microsec.] [interations] [timeout sec.]\n", argv [0]);
+    exit(-2);
   }
 
   pin  = atoi (argv[2]) ;
-  mode = get_wfi_edge(argv[1], argv[3]);
+  mode = get_wfi_edge(argv[1], argv[3], -1);
   if (argc>=5) {
     debounce = atoi(argv[4]);
   }
@@ -287,8 +297,13 @@ void doWfi2(int argc, char *argv [])
   if (argc>=7) {
     timeoutSec = atoi(argv[6]);
   }
+  if (timeoutSec<0 || interations<0 || debounce<0) {
+    fprintf (stderr, " invalid parameter\n");
+    exit(-2);
+  }
 
   doWfiInternal(argv[1], pin, mode, interations, timeoutSec, debounce);
+  exit(-1); // timeout
 }
 
 
@@ -1193,7 +1208,7 @@ int main (int argc, char *argv [])
   else if (strcasecmp (argv [1], "rbx"      ) == 0) doReadByte   (argc, argv, TRUE) ;
   else if (strcasecmp (argv [1], "rbd"      ) == 0) doReadByte   (argc, argv, FALSE) ;
   else if (strcasecmp (argv [1], "clock"    ) == 0) doClock      (argc, argv) ;
-  else if (strcasecmp (argv [1], "wfidb"    ) == 0) doWfi2       (argc, argv) ;
+  else if (strcasecmp (argv [1], "wfis"     ) == 0) doWfi2       (argc, argv) ;
   else if (strcasecmp (argv [1], "wfi"      ) == 0) doWfi        (argc, argv) ;
   else if (strcasecmp (argv [1], "is40pin"  ) == 0) doIs40Pin    () ;
   else
