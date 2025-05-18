@@ -646,6 +646,7 @@ int piBoard40Pin() {
   }
 }
 
+
 int piRP1Model() {
   switch(RaspberryPiModel){
     case PI_MODEL_5:
@@ -658,8 +659,43 @@ int piRP1Model() {
    }
 }
 
+
 int GetMaxPin() {
-  return piRP1Model() ? 27 : 63;
+  if (piRP1Model()) {
+    switch(wiringPiMode) {
+      case WPI_MODE_PHYS:
+        return 40;
+      case WPI_MODE_PINS:
+        return 31;
+      default:
+        return 27;
+    }
+  } else {
+    return 63;
+  }
+}
+
+
+int ToBCMPin(int* pin) {
+  if (*pin<0 || *pin>63) {
+    return FALSE;
+  }
+  switch(wiringPiMode) {
+    case WPI_MODE_PINS:
+      *pin = pinToGpio[*pin];
+      break;
+    case WPI_MODE_PHYS:
+      *pin = physToGpio[*pin];
+      break;
+    case WPI_MODE_GPIO:
+      return TRUE;
+    default:
+      return FALSE;
+  }
+  if (piRP1Model() && *pin>27) {
+    return FALSE;
+  }
+  return TRUE;
 }
 
 
@@ -1286,8 +1322,9 @@ int physPinToGpio (int physPin)
  *********************************************************************************
  */
 void setPadDrivePin (int pin, int value) {
-  if (!piRP1Model()) return;
-  if (pin < 0 || pin > GetMaxPin()) return ;
+  if (!piRP1Model() || !ToBCMPin(&pin)) {
+    return;
+  }
 
   uint32_t wrVal;
   value = value & 3; // 0-3 supported
@@ -1368,14 +1405,9 @@ int getAlt (int pin)
 {
   int alt;
 
-  pin &= 63 ;
-
-  /**/ if (wiringPiMode == WPI_MODE_PINS)
-    pin = pinToGpio [pin] ;
-  else if (wiringPiMode == WPI_MODE_PHYS)
-    pin = physToGpio [pin] ;
-  else if (wiringPiMode != WPI_MODE_GPIO)
-    return 0 ;
+  if (!ToBCMPin(&pin)) {
+    return 0;
+  }
 
   if (piRP1Model()) {
     alt = (gpio[2*pin+1] & RP1_FSEL_NONE_HW); //0-4  function
@@ -1586,14 +1618,9 @@ void gpioClockSet (int pin, int freq)
   int divi, divr, divf ;
 
   FailOnModel5("gpioClockSet");
-  pin &= 63 ;
-
-  /**/ if (wiringPiMode == WPI_MODE_PINS)
-    pin = pinToGpio [pin] ;
-  else if (wiringPiMode == WPI_MODE_PHYS)
-    pin = physToGpio [pin] ;
-  else if (wiringPiMode != WPI_MODE_GPIO)
-    return ;
+  if (!ToBCMPin(&pin)) {
+    return;
+  }
 
   divi = 19200000 / freq ;
   divr = 19200000 % freq ;
@@ -1848,65 +1875,58 @@ void pinModeAlt (int pin, int mode)
 {
   setupCheck ("pinModeAlt") ;
 
-  if ((pin & PI_GPIO_MASK) == 0)		// On-board pin
-  {
-    /**/ if (wiringPiMode == WPI_MODE_PINS)
-      pin = pinToGpio [pin] ;
-    else if (wiringPiMode == WPI_MODE_PHYS)
-      pin = physToGpio [pin] ;
-    else if (wiringPiMode != WPI_MODE_GPIO)
-      return ;
-
-    if (piRP1Model()) {
-      //confusion! diffrent to to BCM!  this is taking directly the value for the register
-      int modeRP1;
-      switch(mode) {
-        case FSEL_ALT0:
-          modeRP1 = 0;
-          break;
-        case FSEL_ALT1:
-          modeRP1 = 1;
-          break;
-        case FSEL_ALT2:
-          modeRP1 = 2;
-          break;
-        case FSEL_ALT3:
-          modeRP1 = 3;
-          break;
-        case FSEL_ALT4:
-          modeRP1 = 4;
-          break;
-        case FSEL_ALT5:
-          modeRP1 = 5;
-          break;
-        case FSEL_ALT6:
-          modeRP1 = 6;
-          break;
-        case FSEL_ALT7:
-          modeRP1 = 7;
-          break;
-        case FSEL_ALT8:
-          modeRP1 = 8;
-          break;
-        case FSEL_OUTP:
-        case FSEL_INPT:
-          modeRP1 = RP1_FSEL_GPIO;
-          break;
-        default:
-          fprintf(stderr, "pinModeAlt: invalid mode %d\n", mode);
-          return;
-      }
-      //printf("pinModeAlt: Pi5 alt pin %d to %d\n", pin, modeRP1);
-      gpio[2*pin+1] = (modeRP1 & RP1_FSEL_NONE_HW) | RP1_DEBOUNCE_DEFAULT; //0-4  function, 5-11 debounce time
-    } else {
-      int fSel  = gpioToGPFSEL [pin] ;
-      int shift = gpioToShift  [pin] ;
-
-      *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) | ((mode & 0x7) << shift) ;
-    }
-
+  if (!ToBCMPin(&pin)) {
+    return;
   }
-}
+
+  if (piRP1Model()) {
+    //confusion! diffrent to to BCM!  this is taking directly the value for the register
+    int modeRP1;
+    switch(mode) {
+      case FSEL_ALT0:
+        modeRP1 = 0;
+        break;
+      case FSEL_ALT1:
+        modeRP1 = 1;
+        break;
+      case FSEL_ALT2:
+        modeRP1 = 2;
+        break;
+      case FSEL_ALT3:
+        modeRP1 = 3;
+        break;
+      case FSEL_ALT4:
+        modeRP1 = 4;
+        break;
+      case FSEL_ALT5:
+        modeRP1 = 5;
+        break;
+      case FSEL_ALT6:
+        modeRP1 = 6;
+        break;
+      case FSEL_ALT7:
+        modeRP1 = 7;
+        break;
+      case FSEL_ALT8:
+        modeRP1 = 8;
+        break;
+      case FSEL_OUTP:
+      case FSEL_INPT:
+        modeRP1 = RP1_FSEL_GPIO;
+        break;
+      default:
+        fprintf(stderr, "pinModeAlt: invalid mode %d\n", mode);
+        return;
+    }
+    //printf("pinModeAlt: Pi5 alt pin %d to %d\n", pin, modeRP1);
+    gpio[2*pin+1] = (modeRP1 & RP1_FSEL_NONE_HW) | RP1_DEBOUNCE_DEFAULT; //0-4  function, 5-11 debounce time
+  } else {
+    int fSel  = gpioToGPFSEL [pin] ;
+    int shift = gpioToShift  [pin] ;
+
+    *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) | ((mode & 0x7) << shift) ;
+  }
+ }
 
 
 /*
@@ -2447,12 +2467,9 @@ void pwmWrite (int pin, int value)
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
-    /**/ if (wiringPiMode == WPI_MODE_PINS)
-      pin = pinToGpio [pin] ;
-    else if (wiringPiMode == WPI_MODE_PHYS)
-      pin = physToGpio [pin] ;
-    else if (wiringPiMode != WPI_MODE_GPIO)
-      return ;
+    if (!ToBCMPin(&pin)) {
+      return;
+    }
 
     /* would be possible on ms mode but not on bal, deactivated, use pwmc modify instead
     if (piGpioBase == GPIO_PERI_BASE_2711) {
@@ -2677,15 +2694,9 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
   const char* strmode = "";
   struct WPIWfiStatus wfiStatus;
   
-  if (wiringPiMode == WPI_MODE_PINS)
-    pin = pinToGpio [pin] ;
-  else if (wiringPiMode == WPI_MODE_PHYS)
-    pin = physToGpio [pin] ;
-
   memset(&wfiStatus, 0, sizeof(wfiStatus));
-  
   /* open gpio */
-  if (wiringPiGpioDeviceGetFd()<0) {
+  if (wiringPiGpioDeviceGetFd()<0 || !ToBCMPin(&pin)) {
     wfiStatus.statusOK = -1;
     return wfiStatus;
   }
@@ -2844,12 +2855,24 @@ int waitForInterrupt (int pin, int ms) {
  *********************************************************************************
  */
 
-int wiringPiISRStop (int pin) {
-  void *res; 
-  
+int wiringPiISRStop(int pin) {
+
+  if (wiringPiMode == WPI_MODE_UNINITIALISED) {
+    return wiringPiFailure(WPI_FATAL, "wiringPiISRStop: wiringPi has not been initialised. Unable to continue.\n");
+  }
+  if (!ToBCMPin(&pin)) {
+    fprintf(stderr, "wiringPiISRStop: wrong pin %d (mode: %d) number!\n", pin, wiringPiMode);
+    return EINVAL;
+  }
+  if (wiringPiDebug) {
+    printf("wiringPiISRStop: pin %d\n", pin) ;
+  }
+
   if (isrFds[pin] > 0) {
+    void *res;
+
     if (wiringPiDebug)
-      printf ("wiringPiISRStop: close thread 0x%lX\n", (unsigned long)isrThreads[pin]) ;
+      printf("wiringPiISRStop: close thread 0x%lX\n", (unsigned long)isrThreads[pin]);
     
     if (isrThreads[pin] != 0) {
       if (pthread_cancel(isrThreads[pin]) == 0) {
@@ -2864,10 +2887,13 @@ int wiringPiISRStop (int pin) {
         }
       } else {
         if (wiringPiDebug)
-          printf ("wiringPiISRStop: could not cancel thread\n");
+          printf("wiringPiISRStop: could not cancel thread\n");
       }
     }
     close(isrFds [pin]);
+  } else {
+      if (wiringPiDebug)
+        printf("wiringPiISRStop: Warning stop isr, but its not active\n");
   }
   isrFds [pin] = -1;
   isrFunctions[pin] = NULL;
@@ -2882,7 +2908,7 @@ int wiringPiISRStop (int pin) {
   chipFd = -1;
   */
   if (wiringPiDebug) {
-    printf ("wiringPiISRStop: wiringPiISRStop finished\n") ;
+    printf("wiringPiISRStop: wiringPiISRStop finished\n");
   }
   return 0;
 }
@@ -3077,24 +3103,18 @@ void *interruptHandlerV2(void *arg)
 
 int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus, void* userdata), void (*functionClassic)(void), unsigned long debounce_period_us, void* userdata)
 {
-  const int maxpin = GetMaxPin();
-
-  if (pin < 0 || pin > maxpin)
-    return wiringPiFailure (WPI_FATAL, "wiringPiISR: pin must be 0-%d (%d)\n", maxpin, pin) ;
-  if (wiringPiMode == WPI_MODE_UNINITIALISED)
-    return wiringPiFailure (WPI_FATAL, "wiringPiISR: wiringPi has not been initialised. Unable to continue.\n") ;
-     
-  if (wiringPiMode == WPI_MODE_PINS) {
-    pin = pinToGpio [pin] ;
-  } else if (wiringPiMode == WPI_MODE_PHYS) {
-    pin = physToGpio [pin] ;
+  if (wiringPiMode == WPI_MODE_UNINITIALISED) {
+    return wiringPiFailure(WPI_FATAL, "wiringPiISR: wiringPi has not been initialised. Unable to continue.\n");
   }
-  
+  if (!ToBCMPin(&pin)) {
+    fprintf(stderr, "wiringPiISRStop: wrong pin %d (mode: %d) number!\n", pin, wiringPiMode);
+    return EINVAL;
+  }
   if (wiringPiDebug) {
-    printf ("wiringPi: wiringPiISR pin %d, edgeMode %d\n", pin, edgeMode) ;
+    printf("wiringPi: wiringPiISR pin %d, edgeMode %d\n", pin, edgeMode);
   }
-  if (isrFunctions[pin] || isrFunctionsV2[pin] ) {
-    printf ("wiringPi: ISR function already active, ignoring \n") ;
+  if (isrFunctions[pin] || isrFunctionsV2[pin]) {
+    fprintf(stderr, "wiringPi: ISR function already active, ignoring \n");
   }
 
   isrFunctionsV2[pin] = function;
@@ -3104,7 +3124,7 @@ int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiSta
   isrDebouncePeriodUs[pin] = debounce_period_us;
   
   if (wiringPiDebug) {
-    printf ("wiringPi: mutex in\n") ;
+    printf("wiringPi: mutex in\n");
   }
   pthread_mutex_lock (&pinMutex) ;
     pinPass = pin ;
@@ -3129,12 +3149,12 @@ int wiringPiISRInternal(int pin, int edgeMode, void (*function)(struct WPIWfiSta
     }
 
     if (wiringPiDebug) {
-      printf ("wiringPi: mutex out\n") ;
+      printf("wiringPi: mutex out\n");
     }
   pthread_mutex_unlock (&pinMutex) ;
 
   if (wiringPiDebug) {
-    printf ("wiringPi: wiringPiISR finished\n") ;
+    printf("wiringPi: wiringPiISR finished\n");
   }
   return 0 ;
 }

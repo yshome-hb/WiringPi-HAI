@@ -281,8 +281,8 @@ extern          int  piBoardRev          (void) ;	// Deprecated, but does the sa
 extern          void piBoardId           (int *model, int *rev, int *mem, int *maker, int *overVolted) ;
 extern          int  piBoard40Pin        (void) ;                   // Interface V3.7
 extern          int  piRP1Model          (void) ;                   // Interface V3.14
-extern          int  wpiPinToGpio        (int wpiPin) ;
-extern          int  physPinToGpio       (int physPin) ;
+extern          int  wpiPinToGpio        (int wpiPin) ;   // please don't use outside 0-63 and on RP1
+extern          int  physPinToGpio       (int physPin) ;  // please don't use outside 0-63 and on RP1
 extern          void setPadDrive         (int group, int value) ;
 extern          void setPadDrivePin      (int pin, int value);     // Interface V3.0
 extern          int  getAlt              (int pin) ;
