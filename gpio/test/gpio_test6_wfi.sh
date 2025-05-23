@@ -110,10 +110,14 @@ wfis_test() {
     fi
 }
 
+gpio is40pin || { GPIOIN=17; GPIOOUT=18; echo "old 28 pin system"; }
+
+
 echo 
 echo Unit test gpio GPIO${GPIOOUT} and GPIO${GPIOIN} - functions: mode, write, wfi
 echo ------------------------------------------------------------------
 echo 
+
 
 #prepare trigger out
 gpio -g mode $GPIOOUT out

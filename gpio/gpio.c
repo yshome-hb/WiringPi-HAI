@@ -972,7 +972,7 @@ static void doVersion (char *argv [])
 
 static void doIs40Pin ()
 {
-  exit(piBoard40Pin());
+  exit(piBoard40Pin() ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 /*

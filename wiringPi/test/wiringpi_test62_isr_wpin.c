@@ -79,35 +79,41 @@ int main (void) {
   int IRQpin = GPIOIN;
   int OUTpin = GPIO;
   
-  if (RaspberryPiModel==PI_MODEL_4B) {
-    pinMode(IRQpin, INPUT);
-    pinMode(OUTpin, OUTPUT);
-    digitalWrite (OUTpin, LOW) ;
-  
-    printf("\nTesting IRQ @ WPI-GPIO%d with trigger @ WPI-GPIO%d rising\n", IRQpin, OUTpin);
-    CheckSame("wiringPiISR",  wiringPiISR(IRQpin, INT_EDGE_RISING, &wfiup), 0);
-    sleep(1);
-    StartSequence(INT_EDGE_RISING, OUTpin, 3 , 3);
-    sleep(1);
-    CheckSame("wiringPiISRStop", wiringPiISRStop(IRQpin), 0);
-    printf("\n.IRQ off\n");
-    sleep(1);
-    StartSequence(INT_EDGE_RISING, OUTpin, 2, 0);
+  switch(RaspberryPiModel) {
+    case PI_MODEL_4B:
+    case PI_MODEL_5:
+      pinMode(IRQpin, INPUT);
+      pinMode(OUTpin, OUTPUT);
+      digitalWrite (OUTpin, LOW) ;
 
-    printf("\nTesting IRQ @ WPI-GPIO%d with trigger @ WPI-GPIO%d falling\n", IRQpin, OUTpin);
-    CheckSame("wiringPiISR",  wiringPiISR(IRQpin, INT_EDGE_RISING, &wfidown), 0);
-    sleep(1);
-    StartSequence(INT_EDGE_FALLING, OUTpin, 4, -4);
-    sleep(1);
-    CheckSame("wiringPiISRStop", wiringPiISRStop(IRQpin), 0);
-    printf("\n.IRQ off\n");
-    sleep(1);
-    StartSequence(INT_EDGE_RISING, OUTpin, 2, 0);
+      printf("\nTesting IRQ @ WPI-GPIO%d with trigger @ WPI-GPIO%d rising\n", IRQpin, OUTpin);
+      CheckSame("wiringPiISR",  wiringPiISR(IRQpin, INT_EDGE_RISING, &wfiup), 0);
+      sleep(1);
+      StartSequence(INT_EDGE_RISING, OUTpin, 3 , 3);
+      sleep(1);
+      CheckSame("wiringPiISRStop", wiringPiISRStop(IRQpin), 0);
+      printf("\n.IRQ off\n");
+      sleep(1);
+      StartSequence(INT_EDGE_RISING, OUTpin, 2, 0);
 
-    printf("Error check - next call must be wrong!\n");
-    CheckSame("wiringPiISRStop with wrong pin, result code:", wiringPiISRStop(5555), EINVAL);
+      printf("\nTesting IRQ @ WPI-GPIO%d with trigger @ WPI-GPIO%d falling\n", IRQpin, OUTpin);
+      CheckSame("wiringPiISR",  wiringPiISR(IRQpin, INT_EDGE_RISING, &wfidown), 0);
+      sleep(1);
+      StartSequence(INT_EDGE_FALLING, OUTpin, 4, -4);
+      sleep(1);
+      CheckSame("wiringPiISRStop", wiringPiISRStop(IRQpin), 0);
+      printf("\n.IRQ off\n");
+      sleep(1);
+      StartSequence(INT_EDGE_RISING, OUTpin, 2, 0);
 
-    pinMode(OUTpin, INPUT);
+      printf("Error check - next call must be wrong!\n");
+      CheckSame("wiringPiISRStop with wrong pin, result code:", wiringPiISRStop(5555), EINVAL);
+
+      pinMode(OUTpin, INPUT);
+      break;
+    default:
+      printf("unit test not possible with this hardware, need connection between Wiringpi pin 28 and 29!\n");
+      break;
   }
 
 	return UnitTestState();

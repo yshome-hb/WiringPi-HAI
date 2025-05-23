@@ -12,7 +12,7 @@ int GPIO = 19;
 int GPIOIN = 26;
 const int ToggleValue = 4;
 float irq_timstamp_duration_ms = 0;
-float accuracy = 0.012;
+float accuracy = 0.015;
 float bounce_acc = 1.0;
 
 static volatile int globalCounter;
