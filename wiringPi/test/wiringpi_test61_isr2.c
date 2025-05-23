@@ -189,6 +189,14 @@ int main (void) {
 
 	wiringPiVersion(&major, &minor);
 
+  if (!piBoard40Pin()) {
+      printf("Old 28pin system\n");
+		//GPIO = 23;
+		//GPIOIN = 24;
+	  GPIO = 17;
+    GPIOIN = 18;
+  }
+
 	printf("WiringPi GPIO test program 6b (using GPIO%d (output) and GPIO%d (input))\n", GPIO, GPIOIN);
 	printf("ISR and ISR2 test (WiringPi %d.%d)\n", major, minor);
 
@@ -205,6 +213,11 @@ int main (void) {
     case PI_MODEL_CM:
       accuracy = 0.02;
       bounce_acc = 2.7;
+      break;
+    case PI_MODEL_ZERO:
+    case PI_MODEL_ZERO_W: //ARM=1000MHz
+      accuracy = 0.02;
+      bounce_acc = 2.5;
       break;
     default:
       accuracy = 0.012;
