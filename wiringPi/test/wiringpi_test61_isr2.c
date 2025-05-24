@@ -1,5 +1,5 @@
-// WiringPi test program: 3.16 new ISR2 function with Kernel char device interface / sysfs successor 
-// Compile: gcc -Wall wiringpi_test1_device.c -o wiringpi_test1_device -lwiringPi
+// WiringPi test program: 6.1 new ISR2 function with Kernel char device interface / sysfs successor
+// Compile: gcc -Wall wiringpi_test61_isr2.c -o wiringpi_test61_isr2 -lwiringPi
 
 #include "wpi_test.h"
 #include <string.h>
@@ -189,7 +189,17 @@ int main (void) {
 
 	wiringPiVersion(&major, &minor);
 
-	printf("WiringPi GPIO test program 6b (using GPIO%d (output) and GPIO%d (input))\n", GPIO, GPIOIN);
+  int result = piBoard40Pin();
+  CheckNotSame("40-Pin board: ", result, -1);
+  if (result==0) {
+      printf("Old 28pin system\n");
+		//GPIO = 23;
+		//GPIOIN = 24;
+	  GPIO = 17;
+    GPIOIN = 18;
+  }
+
+	printf("WiringPi GPIO test program 6.2 (using GPIO%d (output) and GPIO%d (input))\n", GPIO, GPIOIN);
 	printf("ISR and ISR2 test (WiringPi %d.%d)\n", major, minor);
 
 	wiringPiSetupGpio();
@@ -206,15 +216,16 @@ int main (void) {
       accuracy = 0.02;
       bounce_acc = 2.7;
       break;
+    case PI_MODEL_ZERO:
+    case PI_MODEL_ZERO_W: //ARM=1000MHz
+      accuracy = 0.02;
+      bounce_acc = 2.5;
+      break;
     default:
       accuracy = 0.012;
       bounce_acc = 1.0;
       break;
   }
-	if (!piBoard40Pin()) {
-		GPIO = 23;
-		GPIOIN = 24;
-	}
 	int IRQpin = GPIOIN;
 	int OUTpin = GPIO;
 

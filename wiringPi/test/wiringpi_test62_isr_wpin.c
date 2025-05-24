@@ -76,15 +76,24 @@ int main (void) {
 
   CheckNotSame("piBoardId", RaspberryPiModel, 0);
 
-  int IRQpin = GPIOIN;
-  int OUTpin = GPIO;
-  
-  switch(RaspberryPiModel) {
-    case PI_MODEL_4B:
-    case PI_MODEL_5:
-      pinMode(IRQpin, INPUT);
-      pinMode(OUTpin, OUTPUT);
-      digitalWrite (OUTpin, LOW) ;
+  int _is40pin = is40pin();
+  CheckNotSame("is40pin", _is40pin, -1);
+
+  if (_is40pin) {
+
+    int IRQpin = GPIOIN;
+    int OUTpin = GPIO;
+
+    pinMode(IRQpin, INPUT);
+    pinMode(OUTpin, OUTPUT);
+    digitalWrite(OUTpin, LOW);
+    delayMicroseconds(100);
+    CheckNotSame("Input", digitalRead(IRQpin), LOW);
+    digitalWrite(OUTpin, HIGH);
+    delayMicroseconds(100);
+    if (digitalRead(IRQpin)==HIGH) {
+      digitalWrite(OUTpin, LOW);
+      delayMicroseconds(100);
 
       printf("\nTesting IRQ @ WPI-GPIO%d with trigger @ WPI-GPIO%d rising\n", IRQpin, OUTpin);
       CheckSame("wiringPiISR",  wiringPiISR(IRQpin, INT_EDGE_RISING, &wfiup), 0);
@@ -108,12 +117,12 @@ int main (void) {
 
       printf("Error check - next call must be wrong!\n");
       CheckSame("wiringPiISRStop with wrong pin, result code:", wiringPiISRStop(5555), EINVAL);
-
-      pinMode(OUTpin, INPUT);
-      break;
-    default:
-      printf("unit test not possible with this hardware, need connection between Wiringpi pin 28 and 29!\n");
-      break;
+    } else {
+      printf("Hardware connection for unit test missing!\n");
+      printf("unit test, need connection between Wiringpi pin 28 and 29!\n");
+    }
+  } else {
+    printf("unit test is for 40-pin hardware only!\n");
   }
 
 	return UnitTestState();
