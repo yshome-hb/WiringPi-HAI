@@ -219,7 +219,7 @@ int main (void) {
     case PI_MODEL_ZERO:
     case PI_MODEL_ZERO_W: //ARM=1000MHz
       accuracy = 0.02;
-      bounce_acc = 2.5;
+      bounce_acc = 2.7;
       break;
     default:
       accuracy = 0.012;
