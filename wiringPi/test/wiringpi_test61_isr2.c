@@ -189,9 +189,9 @@ int main (void) {
 
 	wiringPiVersion(&major, &minor);
 
-  int result = piBoard40Pin();
-  CheckNotSame("40-Pin board: ", result, -1);
-  if (result==0) {
+  int _is40pin = piBoard40Pin();
+  CheckNotSame("40-Pin board: ", _is40pin, -1);
+  if (_is40pin==0) {
       printf("Old 28pin system\n");
 		//GPIO = 23;
 		//GPIOIN = 24;
