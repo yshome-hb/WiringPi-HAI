@@ -76,10 +76,10 @@ int main (void) {
 
   CheckNotSame("piBoardId", RaspberryPiModel, 0);
 
-  int _is40pin = is40pin();
+  int _is40pin = piBoard40Pin();
   CheckNotSame("is40pin", _is40pin, -1);
 
-  if (_is40pin) {
+  if (_is40pin==1) {
 
     int IRQpin = GPIOIN;
     int OUTpin = GPIO;
@@ -88,7 +88,7 @@ int main (void) {
     pinMode(OUTpin, OUTPUT);
     digitalWrite(OUTpin, LOW);
     delayMicroseconds(100);
-    CheckNotSame("Input", digitalRead(IRQpin), LOW);
+    CheckSame("Input", digitalRead(IRQpin), LOW);
     digitalWrite(OUTpin, HIGH);
     delayMicroseconds(100);
     if (digitalRead(IRQpin)==HIGH) {
