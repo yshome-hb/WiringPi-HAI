@@ -370,7 +370,7 @@ void doMode (int argc, char *argv [])
 
   mode = argv [3] ;
 
-  /**/ if (strcasecmp (mode, "in")      == 0) pinMode         (pin, INPUT) ;
+  if      (strcasecmp (mode, "in")      == 0) pinMode         (pin, INPUT) ;
   else if (strcasecmp (mode, "input")   == 0) pinMode         (pin, INPUT) ;
   else if (strcasecmp (mode, "out")     == 0) pinMode         (pin, OUTPUT) ;
   else if (strcasecmp (mode, "output")  == 0) pinMode         (pin, OUTPUT) ;
@@ -602,14 +602,14 @@ static void doWrite (int argc, char *argv [])
 
   pin = atoi (argv [2]) ;
 
-  /**/ if ((strcasecmp (argv [3], "up") == 0) || (strcasecmp (argv [3], "on") == 0))
+  if      ((strcasecmp (argv [3], "up") == 0) || (strcasecmp (argv [3], "on") == 0))
     val = 1 ;
   else if ((strcasecmp (argv [3], "down") == 0) || (strcasecmp (argv [3], "off") == 0))
     val = 0 ;
   else
     val = atoi (argv [3]) ;
 
-  /**/ if (val == 0)
+  if (val == 0)
     digitalWrite (pin, LOW) ;
   else
     digitalWrite (pin, HIGH) ;
@@ -1063,7 +1063,7 @@ int main (int argc, char *argv [])
 
 // Initial test for /sys/class/gpio operations:  --> deprecated, empty but still there
 
-  /**/ if (strcasecmp (argv [1], "exports"    ) == 0)	{ SYSFS_DEPRECATED(argv[0]);	return 0 ; }
+  if      (strcasecmp (argv [1], "exports"    ) == 0)	{ SYSFS_DEPRECATED(argv[0]);	return 0 ; }
   else if (strcasecmp (argv [1], "export"     ) == 0)	{ SYSFS_DEPRECATED(argv[0]);	return 0 ; }
   else if (strcasecmp (argv [1], "edge"       ) == 0)	{ SYSFS_DEPRECATED(argv[0]);	return 0 ; }
   else if (strcasecmp (argv [1], "unexport"   ) == 0)	{ SYSFS_DEPRECATED(argv[0]);	return 0 ; }
@@ -1094,7 +1094,7 @@ int main (int argc, char *argv [])
 
 // Check for -g argument
 
-  /**/ if (strcasecmp (argv [1], "-g") == 0)
+  if (strcasecmp (argv [1], "-g") == 0)
   {
     wiringPiSetupGpio () ;
 
@@ -1180,7 +1180,7 @@ int main (int argc, char *argv [])
 
 // Core wiringPi functions
 
-  /**/ if (strcasecmp (argv [1], "mode"   ) == 0) doMode      (argc, argv) ;
+  if      (strcasecmp (argv [1], "mode"   ) == 0) doMode      (argc, argv) ;
   else if (strcasecmp (argv [1], "read"   ) == 0) doRead      (argc, argv) ;
   else if (strcasecmp (argv [1], "write"  ) == 0) doWrite     (argc, argv) ;
   else if (strcasecmp (argv [1], "pwm"    ) == 0) doPwm       (argc, argv) ;
