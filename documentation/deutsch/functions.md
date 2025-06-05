@@ -285,13 +285,39 @@ if (value==HIGH)
 
 ## Interrupts
 
-### wiringPiISR
+### wiringPiISR (klassische Version)
 
 Registriert eine Interrupt Service Routine (ISR) bzw. Funktion die bei Flankenwechsel ausgeführt wird.
+Es werden bei dieser klassischen Version keine Parameter and die ISR übergeben.  
 
 >>>
 ```C
-int wiringPiISR(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus), unsigned long bouncetime);
+int wiringPiISR(int pin, int mode, void (*function)(void));
+```
+
+``pin``: Der gewünschte Pin (BCM-, WiringPi- oder Pin-Nummer).  
+``mode``: Auslösende Flankenmodus
+ - INT_EDGE_RISING ... Steigende Flanke  
+ - INT_EDGE_FALLING ... Fallende Flanke  
+ - INT_EDGE_BOTH ... Steigende und fallende Flanke  
+
+``*function``: Funktionspointer für ISR  
+``Rückgabewert``:   
+ > 0 ... Erfolgreich  
+<!-- > <>0 ... Fehler, zur Zeit nicht implementiert -->
+
+Beispiel siehe wiringPiISRStop.
+
+
+
+### wiringPiISR2
+
+Registriert eine Interrupt Service Routine (ISR) bzw. Funktion die bei Flankenwechsel ausgeführt wird.
+Es werden erweiterte Parameter an die ISR übergeben.
+
+>>>
+```C
+int wiringPiISR2(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus, void* userdata), unsigned long debounce_period_us, void* userdata);
 ```
 
 ``pin``: Der gewünschte Pin (BCM\-, WiringPi\- oder Pin\-Nummer).  
@@ -301,17 +327,18 @@ int wiringPiISR(int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiS
  - INT_EDGE_FALLING ... Fallende Flanke  
  - INT_EDGE_BOTH ... Steigende und fallende Flanke  
 
-``*function``: Funktionspointer für ISR mit Rückgabeparameter struct WPIWfiStatus:   
+``*function``: Funktionspointer für ISR mit Parameter struct WPIWfiStatus und einem Pointer:   
 ```C  
 struct WPIWfiStatus {
-    int status;             // -1: error, 0: timeout, 1: valid values for edge and timeStamp_us
-    unsigned int gpioPin;   // gpio as BCM pin
-    int edge;               // One of INT_EDGE_FALLING or INT_EDGE_RISING	
-    long long int timeStamp_us;     // time stamp in microseconds, when interrupt happened
+    int statusOK;               // -1: error (return of 'poll' command), 0: timeout, 1: irq processed, next data values are valid if needed
+    unsigned int pinBCM;        // gpio as BCM pin
+    int edge;                   // INT_EDGE_FALLING or INT_EDGE_RISING
+    long long int timeStamp_us; // time stamp in microseconds
 };
 ```  
  
-``bouncetime``: Entprellzeit in Microsekunden, 0 ms schaltet das Entprellen ab   
+``debounce_period_us``: Entprellzeit in Microsekunden, 0 ms schaltet das Entprellen ab   
+``userdata``: Pointer der beim Aufruf der ISR übergeben wird     
 
 ``Rückgabewert``:   
  > 0 ... Erfolgreich  
@@ -337,13 +364,18 @@ int wiringPiISRStop (int pin)
 
 ### waitForInterrupt
 
+Funktion ist nicht mehr verfügbar, es wird nur noch die ``waitForInterrupt2`` unterstützt!
+
+
+### waitForInterrupt2
+
 Wartet auf einen Aufruf der Interrupt Service Routine (ISR) mit Timeout und Entprellzeit in Mikrosekunden.  
 Blockiert das Programm bis zum Eintreffen der auslösenden Flanke oder bis zum Ablauf des Timeouts.  
 Diese Funktion sollte nicht verwendet werden.
 
 >>>
 ```C
-struct WPIWfiStatus wfiStatus waitForInterrupt (int pin, int edgeMode, int mS, unsigned long bouncetime)
+struct WPIWfiStatus wfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned long debounce_period_us)
 ```
 
 ``pin``: Der gewünschte Pin (BCM\-, WiringPi\- oder Pin\-Nummer).  
@@ -356,26 +388,25 @@ struct WPIWfiStatus wfiStatus waitForInterrupt (int pin, int edgeMode, int mS, u
 ``mS``: Timeout in Milisekunden.  
  - \-1 warten ohne timeout  
  - 0 wartet nicht  
- - 1...n wartet maximal n mS Millisekunden  
+ - 1...n wartet maximal n Millisekunden  
  
-``bouncetime``: Entprellzeit in Microsekunden, 0 schaltet Entprellen ab.  
+``debounce_period_us``: Entprellzeit in Microsekunden, 0 schaltet Entprellen ab.  
 
 ``Rückgabewert``:  
 ```C  
 struct WPIWfiStatus {
-    int status;             // -1: error, 0: timeout, 1: valid values for edge and timeStamp_us
-    unsigned int gpioPin;   // gpio as BCM pin
-    int edge;               // One of INT_EDGE_FALLING or INT_EDGE_RISING	
-    long long int timeStamp_us;     // time stamp in microseconds, when interrupt happened
+    int statusOK;               // -1: error (return of 'poll' command), 0: timeout, 1: irq processed, next data values are valid if needed
+    unsigned int pinBCM;        // gpio as BCM pin
+    int edge;                   // INT_EDGE_FALLING or INT_EDGE_RISING
+    long long int timeStamp_us; // time stamp in microseconds
 };
 ```  
 
-**Beispiel:**
-
+### Beispiel
 ```C  
 /*
  * isr_debounce.c:
- *	Wait for Interrupt test program  WiringPi >=3.16 - ISR method
+ *	Wait for Interrupt test program  WiringPi >=3.16 - ISR2 method
  *
  *
  */
@@ -386,7 +417,6 @@ struct WPIWfiStatus {
 #include <stdlib.h>
 #include <unistd.h>
 #include <wiringPi.h>
-
 #include <time.h>
 
 #define BOUNCETIME 3000 // microseconds
@@ -402,12 +432,7 @@ struct WPIWfiStatus {
 
 int toggle = 0;
 
-/*
- * myInterrupt:
- *********************************************************************************
- */
-
-static void wfi (struct WPIWfiStatus wfiStatus) { 
+static void wfi(struct WPIWfiStatus wfiStatus, void* userdata) { 
 //  struct timeval now;
   long long int timenow, diff;
   struct timespec curr;
@@ -457,7 +482,7 @@ int main (void)
   digitalWrite (OUTpin, LOW) ;
 
   printf("Testing waitForInterrupt on both edges IRQ @ GPIO%d, timeout is %d\n", IRQpin, TIMEOUT);  
-  struct WPIWfiStatus wfiStatus = waitForInterrupt(IRQpin, INT_EDGE_BOTH, TIMEOUT, BOUNCETIME_WFI );
+  struct WPIWfiStatus wfiStatus = waitForInterrupt2(IRQpin, INT_EDGE_BOTH, TIMEOUT, BOUNCETIME_WFI);
   if (wfiStatus.status < 0) {
     printf("waitForInterrupt returned error\n");
     pinMode(OUTpin, INPUT);
@@ -473,10 +498,10 @@ int main (void)
         printf("waitForInterrupt: GPIO pin %d rising edge fired at %lld microseconds\n\n", wfiStatus.gpioPin, wfiStatus.timeStamp_us);        
   }
   
-  printf("Testing IRQ @ GPIO%d with trigger @ GPIO%d on both edges and bouncetime %d microseconds. Toggle LED @ OUTpin on IRQ.\n\n", IRQpin, IRQpin, BOUNCETIME, OUTpin);
+  printf("Testing IRQ @ GPIO%d on both edges and bouncetime %d microseconds. Toggle LED @ GPIO%d on IRQ.\n\n", IRQpin, BOUNCETIME, OUTpin);
   printf("To stop program hit return key\n\n");
   
-  wiringPiISR (IRQpin, INT_EDGE_BOTH, &wfi, BOUNCETIME) ; 
+  wiringPiISR2(IRQpin, INT_EDGE_BOTH, &wfi, BOUNCETIME, NULL) ; 
  
   getc(stdin);
   
@@ -487,7 +512,7 @@ int main (void)
 }
 ```
 
-Output auf dem Terminal:  
+Augabe am Terminal:  
 
 ```  
 pi@RaspberryPi:~/wiringpi-test-v3.16 $ gcc -o isr_debounce isr_debounce.c -l wiringPi
@@ -498,7 +523,7 @@ ISR debounce test (WiringPi 3.16)
 Testing waitForInterrupt on both edges IRQ @ GPIO16, timeout is 10000
 waitForInterrupt: GPIO pin 16 falling edge fired at 256522528012 microseconds
 
-Testing IRQ @ GPIO16 with trigger @ GPIO16 on both edges and bouncetime 3000 microseconds. Toggle LED @ OUTpin on IRQ.
+Testing IRQ @ GPIO16 on both edges and bouncetime 3000 microseconds. Toggle LED @ GPIO12 on IRQ.
 
 To stop program hit return key
 
