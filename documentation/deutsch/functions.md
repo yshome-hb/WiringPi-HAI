@@ -125,7 +125,7 @@ mehr benutzt werden!
 
 **Ab Version 3.4:**  
 ``wiringPiSetupPinType`` entscheidet ob nun WiringPi, BCM oder physische Pin-Nummerierung verwendet wird, anhand des Parameters pinType. Es führt also die ersten 3 Setup-Funktionen auf eine zusammen.  
-``wiringPiSetupGpioDevice`` ist der Nachfolger der ``wiringPiSetupSys`` Funktion und verwendet nun "GPIO Character Device Userspace API" ab WiringPi Version 3.16 in Version 2 (ab Kernel 5.10 verfügbar). Nähere Informationen findet man bei https://docs.kernel.org/driver-api/gpio/driver.html. Anhand des Parameters pinType wird wieder entschieden, welche Pin-Nummerierung verwendet wird.  
+``wiringPiSetupGpioDevice`` ist der Nachfolger der ``wiringPiSetupSys`` Funktion und verwendet nun "GPIO Character Device Userspace API" in Version 2 (ab WiringPi Version 3.16). Nähere Informationen findet man bei https://docs.kernel.org/driver-api/gpio/driver.html. Anhand des Parameters pinType wird wieder entschieden, welche Pin-Nummerierung verwendet wird.  
 Bei dieser Variante wird nicht direkt auf den GPIO-Speicher (DMA) zugegriffen sondern über eine Kernel Schnittstelle, die mit Benutzerrechten verfügbar ist. Nachteil ist der eingeschränkte Funktionsumfang und die niedrige Performance. 
 
 
