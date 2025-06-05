@@ -306,9 +306,6 @@ int wiringPiISR(int pin, int mode, void (*function)(void));
  > 0 ... Erfolgreich  
 <!-- > <>0 ... Fehler, zur Zeit nicht implementiert -->
 
-Beispiel siehe wiringPiISRStop.
-
-
 
 ### wiringPiISR2
 
@@ -343,8 +340,6 @@ struct WPIWfiStatus {
 ``Rückgabewert``:   
  > 0 ... Erfolgreich  
 <!-- > <>0 ... Fehler, zur Zeit nicht implementiert -->
-
-Beispiel siehe waitForInterrupt.  
 
 
 ### wiringPiISRStop
