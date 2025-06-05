@@ -176,15 +176,13 @@ struct wiringPiNodeStruct
   unsigned int data2 ;	//  ditto
   unsigned int data3 ;	//  ditto
 
-           void   (*pinMode)          (struct wiringPiNodeStruct *node, int pin, int mode) ;
-           void   (*pullUpDnControl)  (struct wiringPiNodeStruct *node, int pin, int mode) ;
-           int    (*digitalRead)      (struct wiringPiNodeStruct *node, int pin) ;
-//unsigned int    (*digitalRead8)     (struct wiringPiNodeStruct *node, int pin) ;
-           void   (*digitalWrite)     (struct wiringPiNodeStruct *node, int pin, int value) ;
-//         void   (*digitalWrite8)    (struct wiringPiNodeStruct *node, int pin, int value) ;
-           void   (*pwmWrite)         (struct wiringPiNodeStruct *node, int pin, int value) ;
-           int    (*analogRead)       (struct wiringPiNodeStruct *node, int pin) ;
-           void   (*analogWrite)      (struct wiringPiNodeStruct *node, int pin, int value) ;
+  void (*pinMode)         (struct wiringPiNodeStruct *node, int pin, int mode) ;
+  void (*pullUpDnControl) (struct wiringPiNodeStruct *node, int pin, int mode) ;
+  int  (*digitalRead)     (struct wiringPiNodeStruct *node, int pin) ;
+  void (*digitalWrite)    (struct wiringPiNodeStruct *node, int pin, int value) ;
+  void (*pwmWrite)        (struct wiringPiNodeStruct *node, int pin, int value) ;
+  int  (*analogRead)      (struct wiringPiNodeStruct *node, int pin) ;
+  void (*analogWrite)     (struct wiringPiNodeStruct *node, int pin, int value) ;
 
   struct wiringPiNodeStruct *next ;
 } ;
@@ -255,18 +253,16 @@ enum WPIPinAlt {
 };
 
 
-extern          int  wiringPiGpioDeviceGetFd();               //Interface V3.3
-extern          void pinModeAlt          (int pin, int mode) ;
-extern          enum WPIPinAlt getPinModeAlt       (int pin) ;  // Interface V3.5, same as getAlt but wie enum
-extern          void pinMode             (int pin, int mode) ;
-extern          void pullUpDnControl     (int pin, int pud) ;
-extern          int  digitalRead         (int pin) ;
-extern          void digitalWrite        (int pin, int value) ;
-extern unsigned int  digitalRead8        (int pin) ;
-extern          void digitalWrite8       (int pin, int value) ;
-extern          void pwmWrite            (int pin, int value) ;
-extern          int  analogRead          (int pin) ;
-extern          void analogWrite         (int pin, int value) ;
+extern int  wiringPiGpioDeviceGetFd();               //Interface V3.3
+extern void pinModeAlt          (int pin, int mode) ;
+extern enum WPIPinAlt getPinModeAlt       (int pin) ;  // Interface V3.5, same as getAlt but wie enum
+extern void pinMode             (int pin, int mode) ;
+extern void pullUpDnControl     (int pin, int pud) ;
+extern int  digitalRead         (int pin) ;
+extern void digitalWrite        (int pin, int value) ;
+extern void pwmWrite            (int pin, int value) ;
+extern int  analogRead          (int pin) ;
+extern void analogWrite         (int pin, int value) ;
 
 // PiFace specifics
 //	(Deprecated)
