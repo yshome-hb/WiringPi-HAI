@@ -145,7 +145,10 @@ sudo apt install ./wiringpi-3.x.deb
 
 ## Ports
 
-wiringPi has been wrapped for multiple languages:
+wiringPi has been wrapped for multiple languages: 
+
+NOTE: these wrappers are _not_ updated and maintained in sync with WiringPi version 3+,
+therefore we cannot guarantee functionality or provide support for a specific implementation.
 
 - Node - [https://github.com/WiringPi/WiringPi-Node](https://github.com/WiringPi/WiringPi-Node)
 - Perl - [https://github.com/WiringPi/WiringPi-Perl](https://github.com/WiringPi/WiringPi-Perl)
