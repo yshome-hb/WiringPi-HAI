@@ -144,6 +144,7 @@ extern const char *piRevisionNames [16] ;
 extern const char *piMakerNames    [16] ;
 extern const int   piMemorySize    [ 8] ;
 
+
 //	Intended for the GPIO program Use at your own risk.
 
 // Threads
@@ -280,8 +281,8 @@ extern          int  piBoardRev          (void) ;	// Deprecated, but does the sa
 extern          void piBoardId           (int *model, int *rev, int *mem, int *maker, int *overVolted) ;
 extern          int  piBoard40Pin        (void) ;                   // Interface V3.7
 extern          int  piRP1Model          (void) ;                   // Interface V3.14
-extern          int  wpiPinToGpio        (int wpiPin) ;
-extern          int  physPinToGpio       (int physPin) ;
+extern          int  wpiPinToGpio        (int wpiPin) ;   // please don't use outside 0-63 and on RP1
+extern          int  physPinToGpio       (int physPin) ;  // please don't use outside 0-63 and on RP1
 extern          void setPadDrive         (int group, int value) ;
 extern          void setPadDrivePin      (int pin, int value);     // Interface V3.0
 extern          int  getAlt              (int pin) ;
@@ -296,12 +297,20 @@ extern          void digitalWriteByte    (int value) ;
 extern          void digitalWriteByte2   (int value) ;
 
 // Interrupts
-//	(Also Pi hardware specific)
+// status returned from waitForInterruptV2    V3.16
+struct WPIWfiStatus {
+    int statusOK;               // -1: error (return of 'poll' command), 0: timeout, 1: irq processed, next data values are valid if needed
+    unsigned int pinBCM;        // gpio as BCM pin
+    int edge;                   // INT_EDGE_FALLING or INT_EDGE_RISING
+    long long int timeStamp_us; // time stamp in microseconds
+};
 
-extern int  waitForInterrupt    (int pin, int mS) ;
+//extern int  waitForInterrupt    (int pin, int ms);  unknown if still working, disabled for V3.16, please contact developer via github
 extern int  wiringPiISR         (int pin, int mode, void (*function)(void)) ;
+extern struct WPIWfiStatus  waitForInterrupt2(int pin, int edgeMode, int ms, unsigned long debounce_period_us) ;   // V3.16
+extern int  wiringPiISR2       (int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus, void* userdata), unsigned long debounce_period_us, void* userdata) ;  // V3.16
 extern int  wiringPiISRStop     (int pin) ;  //V3.2
-extern int  waitForInterruptClose(int pin) ; //V3.2
+extern int  waitForInterruptClose(int pin) ; //V3.2 legacy use wiringPiISRStop
 
 // Threads
 
@@ -315,8 +324,8 @@ extern int piHiPri (const int pri) ;
 
 // Extras from arduino land
 
-extern void         delay             (unsigned int howLong) ;
-extern void         delayMicroseconds (unsigned int howLong) ;
+extern void         delay             (unsigned int ms) ;
+extern void         delayMicroseconds (unsigned int us) ;
 extern unsigned int millis            (void) ;
 extern unsigned int micros            (void) ;
 

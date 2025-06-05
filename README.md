@@ -119,10 +119,10 @@ cd WiringPi
 
 # build the package
 ./build debian
-mv debian-template/wiringpi-3.0-1.deb .
+mv debian-template/wiringpi-3.x.deb .
 
 # install it
-sudo apt install ./wiringpi-3.0-1.deb
+sudo apt install ./wiringpi-3.x.deb
 ```
 
 ### Prebuilt Binaries
@@ -133,14 +133,14 @@ Unzip/use the portable prebuilt verison:
 
 ```sh
 # unzip the archive
-tar -xfv wiringpi_3.0.tar.gz
+tar -xfv wiringpi_3.x.tar.gz
 ```
 
 Install the debian package:
 
 ```sh
 # install a dpkg
-sudo apt install ./wiringpi-3.0-1.deb
+sudo apt install ./wiringpi-3.x.deb
 ```
 
 ## Ports
