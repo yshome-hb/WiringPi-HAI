@@ -20,13 +20,13 @@ sudo apt install git
 git clone https://github.com/WiringPi/WiringPi.git
 cd WiringPi
 ./build debian
-mv debian-template/wiringpi-3.1x.deb .
+mv debian-template/wiringpi_3.16_arm64.deb .
 ```
 
 **Debian-Paket installieren:**
 
 ```bash
-sudo apt install ./wiringpi-3.1x.deb
+sudo apt install ./wiringpi_3.16_arm64.deb
 ```
 
 **Debian-Paket deinstallieren:**
@@ -409,7 +409,7 @@ struct WPIWfiStatus wfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, u
 ``ms``: Timeout in Milisekunden.
  - \-1 ... Warten ohne Timeout
  - 0 ... Wartet nicht
- - 1...n ... Wartet maximal n Millisekunden
+ - 1-n ... Wartet maximal n Millisekunden
  
 ``debounce_period_us``: Entprellzeit in Microsekunden, 0 schaltet Entprellen ab.  
 
@@ -690,9 +690,21 @@ int fd = wiringPiI2CSetupInterface("/dev/i2c-1", 0x20);
 ```
 
 
-### wiringPiI2CWrite / wiringPiI2CWriteReg8 / wiringPiI2CWriteReg16 / wiringPiI2CWriteBlockData
+### wiringPiI2CWrite
 
-...
+Einfaches schreiben auf einen I2C-Slave. Manche Geräte benötigen keine Adressierung eines Registers.
+
+### wiringPiI2CWriteReg8
+
+Schreibt 8-Bit Daten auf ein Register am Geräte.
+
+### wiringPiI2CWriteReg16
+
+Schreibt 16-Bit Daten auf ein Register am Geräte.
+
+### wiringPiI2CWriteBlockData
+
+Schreibt entsprechend der angeben Größe Daten auf ein Register am Geräte.
 
 ### wiringPiI2CRawWrite
 
@@ -725,9 +737,25 @@ if (fd>0) {
 }
 ```
 
-### wiringPiI2CRead / wiringPiI2CReadReg8 / wiringPiI2CReadReg16 / wiringPiI2CReadBlockData
 
-...
+### wiringPiI2CRead
+
+Einfaches lesen vom I2C-Slave. Manche Geräte benötigen keine Adressierung eines Registers.
+
+### wiringPiI2CReadReg8
+
+Liest 8-Bit Daten vom Register am Geräte.
+
+
+### wiringPiI2CReadReg16
+
+Liest 16-Bit Daten vom Register am Geräte.
+
+
+### wiringPiI2CReadBlockData
+
+Liest entsprechend der angeben Größe Daten vom Register am Geräte.
+
 
 ### wiringPiI2CRawRead
 

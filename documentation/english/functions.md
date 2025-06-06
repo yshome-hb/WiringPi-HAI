@@ -22,13 +22,13 @@ sudo apt install git
 git clone https://github.com/WiringPi/WiringPi.git
 cd WiringPi
 ./build debian
-mv debian-template/wiringpi-3.0-1.deb .
+mv debian-template/wiringpi_3.16_arm64.deb .
 ```
 
 **Install Debian package:**  
 
 ```bash
-sudo apt install ./wiringpi-3.0-1.deb
+sudo apt install ./wiringpi_3.16_arm64.deb
 ```
 
 **Uninstall Debian package:**  
@@ -406,7 +406,7 @@ struct WPIWfiStatus wfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, u
 ``ms``: Timeout in milliseconds.
  - \-1 ... Wait without timeout
  - 0 ... No wait
- - 1...n ... Waits for a maximum of n milliseconds
+ - 1-n ... Waits for a maximum of n milliseconds
  
 ``debounce_period_us``: Debounce time in microseconds, 0 disables debouncing.  
 
@@ -687,15 +687,15 @@ Simple device write. Some devices accept data this way without needing to access
 
 ### wiringPiI2CWriteReg8
 
-Writes a 8-bit data value into the device register indicated.
+Writes 8-bit data value to the device register.
 
 ### wiringPiI2CWriteReg16
 
-Writes a 16-bit data value into the device register indicated.
+Writes 16-bit data value to the device register.
 
 ### wiringPiI2CWriteBlockData
 
-...
+Writes specified byte data values to the device register.
 
 ### wiringPiI2CRawWrite
 
@@ -730,21 +730,24 @@ else {
 }
 ```
 
+
 ### wiringPiI2CRead
 
-Simple device read. Some devices accept data this way without needing to access any internal registers.
+
+Simple read from I2C slave. Some devices accept data this way without needing to access any internal registers.
 
 ### wiringPiI2CReadReg8
 
-Reads an 8-bit data value into the device register indicated.
+Reads 8-bit data value from the device register.
 
 ### wiringPiI2CReadReg16
 
-Reads an 16-bit data value into the device register indicated.
+Reads 16-bit data value from the device register.
+
 
 ### wiringPiI2CReadBlockData
 
-...
+Reads specified byte data values from the device register.
 
 ### wiringPiI2CRawRead
 
