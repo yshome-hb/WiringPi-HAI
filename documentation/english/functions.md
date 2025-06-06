@@ -577,7 +577,7 @@ Opens the specified SPI bus.
 >>>
 ```C
 int wiringPiSPISetup (int channel, int speed)
-int wiringPiSPISetup (int channel, int speed, int mode)
+int wiringPiSPISetupMode (int channel, int speed, int mode)
 int wiringPiSPIxSetupMode(const int number, const int channel, const int speed, const int mode)
 ```
 
