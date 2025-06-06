@@ -791,9 +791,9 @@ Functions that start with  ``wiringPiSPIx`` are new since version 3, allowing th
 Opens the specified SPI bus. The Raspberry Pi has 2 channels, 0 and 1. The speed parameter is an integer in the range of 500,000 through 32,000,000 and represents the SPI clock speed in Hz.
 
 ```C
-int wiringPiSPISetup (int channel, int speed);
+int wiringPiSPISetup(int channel, int speed);
 
-int wiringPiSPISetupMode (int channel, int speed, int mode);
+int wiringPiSPISetupMode(int channel, int speed, int mode);
 
 int wiringPiSPIxSetupMode(const int number, const int channel, const int speed, const int mode);
 ```
