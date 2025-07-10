@@ -15,9 +15,6 @@ int requestLineV1(int pin, unsigned int lineRequestFlags) {
     }
   
     //requested line
-    if (wiringPiGpioDeviceGetFd()<0) {
-      return -1;  // error
-    }
     rq.lineoffsets[0] = pin;
     rq.lines = 1;
     rq.flags = 0; 
@@ -160,9 +157,6 @@ int waitForInterruptInitV1(int pin, int mode)
 
   /* open gpio */
   sleep(1);
-  if (wiringPiGpioDeviceGetFd()<0) {
-    return -1;
-  }
 
   struct gpioevent_request req;
   req.lineoffset = pin;

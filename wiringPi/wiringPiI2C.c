@@ -258,7 +258,8 @@ int wiringPiI2CSetup (const int devId)
   int rev ;
   const char *device ;
 
-  rev = piGpioLayout () ;
+  // rev = piGpioLayout () ;
+  rev = 0;
 
   if (rev == 1)
     device = "/dev/i2c-0" ;

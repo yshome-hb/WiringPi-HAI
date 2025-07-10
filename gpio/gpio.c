@@ -48,7 +48,6 @@ int gpioDebug ;
 // External functions I can't be bothered creating a separate .h file for:
 
 extern void doReadall    (void) ;
-extern void doAllReadall (void) ;
 extern void doQmode      (int argc, char *argv []) ;
 
 #ifndef TRUE
@@ -117,18 +116,25 @@ static int decodePin (const char *str)
  *********************************************************************************
  */
 
-static void doI2Cdetect (const char *progName)
+static void doI2Cdetect (int argc, char *argv [])
 {
-  int port = piGpioLayout () == GPIO_LAYOUT_PI1_REV1 ? 0 : 1 ;
+  int port;
   char command[64];
 
+  if (argc != 3)
+  {
+    fprintf (stderr, "Usage: %s %s port\n", argv [0], argv [1]) ;
+    exit (EXIT_FAILURE) ;
+  }
+
+  port = atoi (argv [2]) ;
   snprintf(command, 64, "i2cdetect -y %d", port);
   int ret = system(command);
   if (ret < 0) {
-    fprintf (stderr, "%s: Unable to run i2cdetect: %s\n", progName, strerror(errno));
+    fprintf (stderr, "%s: Unable to run i2cdetect: %s\n", argv [0], strerror(errno));
   }
   if (0x7F00 == (ret & 0xFF00)) {
-    fprintf (stderr, "%s: i2cdetect not found, please install i2c-tools\n", progName);
+    fprintf (stderr, "%s: i2cdetect not found, please install i2c-tools\n", argv [0]);
   }
 }
 
@@ -464,46 +470,10 @@ static void doPadDrive (int argc, char *argv [])
 
 static void doUsbP (int argc, char *argv [])
 {
-  int model, rev, mem, maker, overVolted ;
+  (void)argc;
+  (void)argv;
 
-  if (argc != 3)
-  {
-    fprintf (stderr, "Usage: %s usbp high|low\n", argv [0]) ;
-    exit (1) ;
-  }
-
-// Make sure we're on a B+
-
-  piBoardId (&model, &rev, &mem, &maker, &overVolted) ;
-
-  if (!((model == PI_MODEL_BP) || (model == PI_MODEL_2)))
-  {
-    fprintf (stderr, "USB power contol is applicable to B+ and v2 boards only.\n") ;
-    exit (1) ;
-  }
-    
-// Make sure we start in BCM_GPIO mode
-
-  wiringPiSetupGpio () ;
-
-  if ((strcasecmp (argv [2], "high") == 0) || (strcasecmp (argv [2], "hi") == 0))
-  {
-    digitalWrite (PI_USB_POWER_CONTROL, 1) ;
-    pinMode (PI_USB_POWER_CONTROL, OUTPUT) ;
-    printf ("Switched to HIGH current USB (1.2A)\n") ;
-    return ;
-  }
-
-  if ((strcasecmp (argv [2], "low") == 0) || (strcasecmp (argv [2], "lo") == 0))
-  {
-    digitalWrite (PI_USB_POWER_CONTROL, 0) ;
-    pinMode (PI_USB_POWER_CONTROL, OUTPUT) ;
-    printf ("Switched to LOW current USB (600mA)\n") ;
-    return ;
-  }
-
-  fprintf (stderr, "Usage: %s usbp high|low\n", argv [0]) ;
-  exit (1) ;
+  return;
 }
 
 
@@ -670,7 +640,7 @@ static void doWriteByte (int argc, char *argv [])
 
 static void doReadByte (int argc, char *argv [], int printHex)
 {
-  int val ;
+  unsigned int val ;
 
   if (argc != 2)
   {
@@ -680,9 +650,9 @@ static void doReadByte (int argc, char *argv [], int printHex)
 
   val = digitalReadByte () ;
   if (printHex)
-    printf ("%02X\n", val) ;
+    printf ("%08X\n", val) ;
   else
-    printf ("%d\n", val) ;
+    printf ("%u\n", val) ;
 }
 
 
@@ -911,7 +881,7 @@ static void doPwmClock (int argc, char *argv [])
 
 static void doVersion (char *argv [])
 {
-  int model, rev, mem, maker, warranty ;
+  int model = 0 ;
   struct stat statBuf ;
   char name [80] ;
   FILE *fd ;
@@ -924,11 +894,10 @@ static void doVersion (char *argv [])
   printf ("This is free software with ABSOLUTELY NO WARRANTY.\n") ;
   printf ("For details type: %s -warranty\n", argv [0]) ;
   printf ("\n") ;
-  piBoardId (&model, &rev, &mem, &maker, &warranty) ;
+  piBoardId (&model) ;
 
   printf ("Hardware details:\n") ;
-  printf ("  Type: %s, Revision: %s, Memory: %dMB, Maker: %s %s\n", 
-      piModelNames [model], piRevisionNames [rev], piMemorySize [mem], piMakerNames [maker], warranty ? "[Out of Warranty]" : "") ;
+  printf ("  Type: %s\n", piModelNames [model]) ;
 
 // Check for device tree
   printf ("\nSystem details:\n") ;
@@ -947,37 +916,8 @@ static void doVersion (char *argv [])
       printf ("      Model: %s\n", name) ;
     }
   }
-
-  int bGlobalAccess = wiringPiGlobalMemoryAccess();		// User level GPIO is GO
-  switch(bGlobalAccess) {
-    case 0:
-        printf ("  * Does not support basic user-level GPIO access via memory.\n") ;
-        break;
-    case 1:
-        printf ("  * Supports basic user-level GPIO access via /dev/mem.\n") ;
-        break;
-    case 2:
-        printf ("  * Supports full  user-level GPIO access via memory.\n") ;
-        break;
-  }
-  if (wiringPiUserLevelAccess()) {
-        printf ("  * Supports basic user-level GPIO access via /dev/gpiomem.\n") ;
-  } else  {
-        printf ("  * Does not support basic user-level GPIO access via /dev/gpiomem.\n") ;
-    if(0==bGlobalAccess) {
-        printf ("  * root or sudo may be required for direct GPIO access.\n") ;
-    }
-  }
-  if (wiringPiGpioDeviceGetFd()>0) {
-    printf ("  * Supports basic user-level GPIO access via /dev/gpiochip (slow).\n") ;
-  }
-
 }
 
-static void doIs40Pin ()
-{
-  exit(piBoard40Pin() ? EXIT_SUCCESS : EXIT_FAILURE);
-}
 
 /*
  * main:
@@ -1022,7 +962,7 @@ int main (int argc, char *argv [])
 
   if ((strcmp (argv [1], "-R") == 0) || (strcmp (argv [1], "-V") == 0))
   {
-    printf ("%d\n", piGpioLayout ()) ;
+    printf ("wiringPi for Microduino\n") ;
     exit (EXIT_SUCCESS) ;
   }
 
@@ -1082,15 +1022,6 @@ int main (int argc, char *argv [])
 
   if (strcasecmp (argv [1], "gbr" ) == 0)	{ doGbr (argc, argv) ; return 0 ; }
   if (strcasecmp (argv [1], "gbw" ) == 0)	{ doGbw (argc, argv) ; return 0 ; }
-
-// Check for allreadall command, force Gpio mode
-
-  if (strcasecmp (argv [1], "allreadall") == 0)
-  {
-    wiringPiSetupGpio () ;
-    doAllReadall      () ;
-    return 0 ;
-  }
 
 // Check for -g argument
 
@@ -1205,8 +1136,8 @@ int main (int argc, char *argv [])
   else if (strcasecmp (argv [1], "nreadall" ) == 0) doReadall    () ;
   else if (strcasecmp (argv [1], "pins"     ) == 0) doReadall    () ;
   else if (strcasecmp (argv [1], "qmode"    ) == 0) doQmode      (argc, argv) ;
-  else if (strcasecmp (argv [1], "i2cdetect") == 0) doI2Cdetect  (argv [0]) ;
-  else if (strcasecmp (argv [1], "i2cd"     ) == 0) doI2Cdetect  (argv [0]) ;
+  else if (strcasecmp (argv [1], "i2cdetect") == 0) doI2Cdetect  (argc, argv) ;
+  else if (strcasecmp (argv [1], "i2cd"     ) == 0) doI2Cdetect  (argc, argv) ;
   else if (strcasecmp (argv [1], "reset"    ) == 0) doReset      (argv [0]) ;
   else if (strcasecmp (argv [1], "wb"       ) == 0) doWriteByte  (argc, argv) ;
   else if (strcasecmp (argv [1], "rbx"      ) == 0) doReadByte   (argc, argv, TRUE) ;
@@ -1214,7 +1145,6 @@ int main (int argc, char *argv [])
   else if (strcasecmp (argv [1], "clock"    ) == 0) doClock      (argc, argv) ;
   else if (strcasecmp (argv [1], "wfis"     ) == 0) doWfi2       (argc, argv) ;
   else if (strcasecmp (argv [1], "wfi"      ) == 0) doWfi        (argc, argv) ;
-  else if (strcasecmp (argv [1], "is40pin"  ) == 0) doIs40Pin    () ;
   else
   {
     fprintf (stderr, "%s: Unknown command: %s.\n", argv [0], argv [1]) ;

@@ -54,7 +54,7 @@
 #define	WPI_MODE_GPIO_DEVICE_BCM  5  // BCM pin numbers like WPI_MODE_GPIO
 #define	WPI_MODE_GPIO_DEVICE_WPI  6  // WiringPi pin numbers like WPI_MODE_PINS
 #define	WPI_MODE_GPIO_DEVICE_PHYS 7  // Physic pin numbers like WPI_MODE_PHYS
-#define	WPI_MODE_UNINITIALISED -1
+#define	WPI_MODE_UNINITIALISED   -1
 
 // Pin modes
 
@@ -69,80 +69,38 @@
 #define	PWM_TONE_OUTPUT		 6
 #define	PM_OFF		         7   // to input / release line
 
-#define	LOW			 0
-#define	HIGH			 1
+#define	LOW				0
+#define	HIGH			1
 
 // Pull up/down/none
 
-#define	PUD_OFF			 0
-#define	PUD_DOWN		 1
-#define	PUD_UP			 2
+#define	PUD_OFF   0
+#define	PUD_DOWN  1
+#define	PUD_UP    2
 
 // PWM
 
 #define	PWM_MODE_MS		0
-#define	PWM_MODE_BAL		1
+#define	PWM_MODE_BAL	1
 
 // Interrupt levels
 
 #define	INT_EDGE_SETUP		0
 #define	INT_EDGE_FALLING	1
 #define	INT_EDGE_RISING		2
-#define	INT_EDGE_BOTH		3
+#define	INT_EDGE_BOTH			3
 
 // Pi model types and version numbers
 //	Intended for the GPIO program Use at your own risk.
-// https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes
-// https://github.com/raspberrypi/documentation/blob/develop/documentation/asciidoc/computers/raspberry-pi/revision-codes.adoc
 
-#define	PI_MODEL_A		    0
-#define	PI_MODEL_B		    1
-#define	PI_MODEL_AP		    2
-#define	PI_MODEL_BP		    3
-#define	PI_MODEL_2		    4
-#define	PI_ALPHA		      5
-#define	PI_MODEL_CM		    6
+#define PI_MODEL_UNKOWN		-1
 
-#define	PI_MODEL_3B		    8
-#define	PI_MODEL_ZERO		  9
-#define	PI_MODEL_CM3		 10
+/* Rockchip RK3588(s) */
+#define PI_MODEL_HAIBOX_5A	0
 
-#define	PI_MODEL_ZERO_W	 12
-#define	PI_MODEL_3BP 		 13
-#define	PI_MODEL_3AP 		 14
-
-#define	PI_MODEL_CM3P 	 16
-#define	PI_MODEL_4B 		 17
-#define	PI_MODEL_ZERO_2W 18
-#define	PI_MODEL_400		 19
-#define	PI_MODEL_CM4		 20
-#define	PI_MODEL_CM4S		 21
-
-#define	PI_MODEL_5		   23
-#define	PI_MODEL_CM5	   24
-#define	PI_MODEL_500	   25
-#define	PI_MODEL_CM5L	   26
-
-#define PI_MODELS_MAX    27
-
-#define	PI_VERSION_1		  0
-#define	PI_VERSION_1_1		1
-#define	PI_VERSION_1_2		2
-#define	PI_VERSION_2		  3
-
-#define	PI_MAKER_SONY		  0
-#define	PI_MAKER_EGOMAN		1
-#define	PI_MAKER_EMBEST		2
-#define	PI_MAKER_UNKNOWN	3
-
-#define GPIO_LAYOUT_PI1_REV1 1   //Pi 1 A/B Revision 1, 1.1, CM
-#define GPIO_LAYOUT_DEFAULT  2
+#define PI_MODELS_MAX			1
 
 extern const char *piModelNames    [PI_MODELS_MAX] ;
-extern const char *piProcessor     [ 5] ;
-extern const char *piRevisionNames [16] ;
-extern const char *piMakerNames    [16] ;
-extern const int   piMemorySize    [ 8] ;
 
 
 //	Intended for the GPIO program Use at your own risk.
@@ -153,7 +111,7 @@ extern const int   piMemorySize    [ 8] ;
 
 // Failure modes
 
-#define	WPI_FATAL	(1==1)
+#define	WPI_FATAL		(1==1)
 #define	WPI_ALMOST	(1==2)
 
 
@@ -225,8 +183,6 @@ enum WPIPinType {
 };
 
 extern void wiringPiVersion	(int *major, int *minor) ;
-extern int  wiringPiGlobalMemoryAccess(void);                 //Interface V3.3
-extern int  wiringPiUserLevelAccess (void) ;
 extern int  wiringPiSetup       (void) ;
 extern int  wiringPiSetupSys    (void) ;
 extern int  wiringPiSetupGpio   (void) ;
@@ -253,7 +209,6 @@ enum WPIPinAlt {
 };
 
 
-extern int  wiringPiGpioDeviceGetFd();               //Interface V3.3
 extern void pinModeAlt          (int pin, int mode) ;
 extern enum WPIPinAlt getPinModeAlt       (int pin) ;  // Interface V3.5, same as getAlt but wie enum
 extern void pinMode             (int pin, int mode) ;
@@ -264,19 +219,9 @@ extern void pwmWrite            (int pin, int value) ;
 extern int  analogRead          (int pin) ;
 extern void analogWrite         (int pin, int value) ;
 
-// PiFace specifics
-//	(Deprecated)
-
-extern int  wiringPiSetupPiFace (void) ;
-extern int  wiringPiSetupPiFaceForGpioProg (void) ;	// Don't use this - for gpio program only
-
 // On-Board Raspberry Pi hardware specific stuff
 
-extern          int  piGpioLayout        (void) ;
-extern          int  piBoardRev          (void) ;	// Deprecated, but does the same as piGpioLayout
-extern          void piBoardId           (int *model, int *rev, int *mem, int *maker, int *overVolted) ;
-extern          int  piBoard40Pin        (void) ;                   // Interface V3.7
-extern          int  piRP1Model          (void) ;                   // Interface V3.14
+extern          void piBoardId           (int *model) ;
 extern          int  wpiPinToGpio        (int wpiPin) ;   // please don't use outside 0-63 and on RP1
 extern          int  physPinToGpio       (int physPin) ;  // please don't use outside 0-63 and on RP1
 extern          void setPadDrive         (int group, int value) ;

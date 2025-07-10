@@ -36,7 +36,7 @@ DYNAMIC=libwiringPi.so.$(VERSION)
 
 #DEBUG	= -g -O0
 DEBUG	= -O2
-CC	?= gcc
+CC		?= gcc
 INCLUDE	= -I.
 DEFS	= -D_GNU_SOURCE
 CFLAGS	= $(DEBUG) $(DEFS) -Wformat=2 -Wall -Wextra -Winline $(INCLUDE) -pipe -fPIC $(EXTRA_CFLAGS)
@@ -46,23 +46,23 @@ LIBS    = -lm -lpthread -lrt -lcrypt
 
 ###############################################################################
 
-SRC	=	wiringPi.c						\
-		wiringSerial.c wiringShift.c				\
-		piHiPri.c piThread.c					\
-		wiringPiSPI.c wiringPiI2C.c				\
-		softPwm.c softTone.c					\
-		mcp23008.c mcp23016.c mcp23017.c			\
-		mcp23s08.c mcp23s17.c					\
-		sr595.c							\
+SRC	=	wiringPi.c							\
+		wiringSerial.c wiringShift.c		\
+		piHiPri.c piThread.c				\
+		wiringPiSPI.c wiringPiI2C.c			\
+		softPwm.c softTone.c				\
+		mcp23008.c mcp23016.c mcp23017.c	\
+		mcp23s08.c mcp23s17.c				\
+		sr595.c								\
 		pcf8574.c pcf8591.c					\
-		mcp3002.c mcp3004.c mcp4802.c mcp3422.c			\
-		max31855.c max5322.c ads1115.c				\
-		sn3218.c						\
-		bmp180.c htu21d.c ds18b20.c rht03.c			\
-		drcSerial.c drcNet.c					\
+		mcp3002.c mcp3004.c mcp4802.c mcp3422.c	\
+		max31855.c max5322.c ads1115.c		\
+		sn3218.c							\
+		bmp180.c htu21d.c ds18b20.c rht03.c	\
+		drcSerial.c drcNet.c				\
 		pseudoPins.c						\
 		wpiExtensions.c						\
-		wiringPiLegacy.c
+		rk3588_soc.c
 
 HEADERS =	$(shell ls *.h)
 
@@ -98,10 +98,10 @@ tags:	$(SRC)
 install:	$(DYNAMIC)
 	$Q echo "[Install Headers]"
 	$Q install -m 0755 -d						$(DESTDIR)$(PREFIX)/include
-	$Q install -m 0644 $(HEADERS)					$(DESTDIR)$(PREFIX)/include
+	$Q install -m 0644 $(HEADERS)				$(DESTDIR)$(PREFIX)/include
 	$Q echo "[Install Dynamic Lib]"
 	$Q install -m 0755 -d						$(DESTDIR)$(PREFIX)/lib
-	$Q install -m 0755 libwiringPi.so.$(VERSION)			$(DESTDIR)$(PREFIX)/lib/libwiringPi.so.$(VERSION)
+	$Q install -m 0755 libwiringPi.so.$(VERSION)				$(DESTDIR)$(PREFIX)/lib/libwiringPi.so.$(VERSION)
 	$Q ln -sf $(DESTDIR)$(PREFIX)/lib/libwiringPi.so.$(VERSION)	$(DESTDIR)/lib/libwiringPi.so
 	$Q $(LDCONFIG)
 
@@ -115,9 +115,9 @@ endif
 install-deb:	$(DYNAMIC) check-deb-destdir
 	$Q echo "[Install Headers: deb]"
 	$Q install -m 0755 -d							$(DEB_DESTDIR)/usr/include
-	$Q install -m 0644 $(HEADERS)						$(DEB_DESTDIR)/usr/include
+	$Q install -m 0644 $(HEADERS)					$(DEB_DESTDIR)/usr/include
 	$Q echo "[Install Dynamic Lib: deb]"
-	install -m 0755 -d							$(DEB_DESTDIR)/usr/lib
+	install -m 0755 -d								$(DEB_DESTDIR)/usr/lib
 	install -m 0755 libwiringPi.so.$(VERSION)				$(DEB_DESTDIR)/usr/lib/libwiringPi.so.$(VERSION)
 	ln -sf $(DEB_DESTDIR)/usr/lib/libwiringPi.so.$(VERSION)	$(DEB_DESTDIR)/usr/lib/libwiringPi.so
 

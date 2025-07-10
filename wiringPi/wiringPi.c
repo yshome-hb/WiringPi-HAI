@@ -142,8 +142,6 @@ struct wiringPiNodeStruct *wiringPiNodes = NULL ;
 #define RP1_FSEL_NONE			0x09
 #define RP1_FSEL_NONE_HW	0x1f  //default, mask
 
-// maybe faster then piRP1Model
-#define ISRP1MODEL (PI_MODEL_5==RaspberryPiModel || PI_MODEL_CM5==RaspberryPiModel|| PI_MODEL_500==RaspberryPiModel || PI_MODEL_CM5L==RaspberryPiModel)
 //RP1 chip (@Pi5) RIO address
 const unsigned int RP1_RIO_OUT = 0x0000;
 const unsigned int RP1_RIO_OE  = (0x0004/4);
@@ -224,9 +222,6 @@ const unsigned int RP1_PADS0_Addr    = 0x400f0000;
 //	due to the Pi v2, v3, etc. and the new /dev/gpiomem interface
 
 const char* gpiomem_global    = "/dev/mem";
-const char* gpiomem_BCM       = "/dev/gpiomem";
-const char* gpiomem_RP1       = "/dev/gpiomem0";
-const int   gpiomem_RP1_Size  = 0x00030000;
 // PCIe memory access, need to detect path / PCIe address
 //dmesg: rp1 0000:01:00.0: bar1 len 0x400000, start 0x1f00000000, end 0x1f003fffff, flags, 0x40200
 const char* pcie_path         = "/sys/bus/pci/devices";
@@ -251,7 +246,6 @@ static volatile unsigned int GPIO_RIO ;
 #define	PAGE_SIZE		(4*1024)
 #define	BLOCK_SIZE		(4*1024)
 
-static unsigned int usingGpioMem    = FALSE ;
 static          int wiringPiSetuped = FALSE ;
 
 // PWM
@@ -342,94 +336,7 @@ static volatile unsigned int piGpioBase = 0 ;
 
 const char *piModelNames [PI_MODELS_MAX] =
 {
-  "Model A",	//  0
-  "Model B",	//  1
-  "Model A+",	//  2
-  "Model B+",	//  3
-  "Pi 2",	//  4
-  "Alpha",	//  5
-  "CM",		//  6
-  "Unknown07",	// 07
-  "Pi 3",	// 08
-  "Pi Zero",	// 09
-  "CM3",	// 10
-  "Unknown11",	// 11
-  "Pi Zero-W",	// 12
-  "Pi 3B+",	// 13
-  "Pi 3A+",	// 14
-  "Unknown15",	// 15
-  "CM3+",	// 16
-  "Pi 4B",	// 17
-  "Pi Zero2-W",	// 18
-  "Pi 400",	// 19
-  "CM4",	// 20
-  "CM4S",	// 21
-  "Unknown22",	// 22
-  "Pi 5",	// 23
-  "CM5",	// 24
-  "Pi 500",	// 25
-  "CM5 Lite",	// 26
-} ;
-
-const char *piProcessor [5] =
-{
-  "BCM2835",
-  "BCM2836",
-  "BCM2837",
-  "BCM2711",
-  "BCM2712",
-} ;
-
-const char *piRevisionNames [16] =
-{
-  "00",
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-} ;
-
-const char *piMakerNames [16] =
-{
-  "Sony UK",//	 0
-  "Egoman",	//	 1
-  "Embest",	//	 2
-  "Sony Japan",//	 3
-  "Embest",	//	 4
-  "Stadium",//	 5
-  "Unknown06",	//	 6
-  "Unknown07",	//	 7
-  "Unknown08",	//	 8
-  "Unknown09",	//	 9
-  "Unknown10",	//	10
-  "Unknown11",	//	11
-  "Unknown12",	//	12
-  "Unknown13",	//	13
-  "Unknown14",	//	14
-  "Unknown15",	//	15
-} ;
-
-const int piMemorySize [8] =
-{
-   256,		//	 0
-   512,		//	 1
-  1024,		//	 2
-  2048,		//	 3
-  4096,		//	 4
-  8192,		//	 5
- 16384,		//	 6
-     0,		//	 7
+  "HaiBox 5A",	//  0
 } ;
 
 // Time for easy calculations
@@ -441,9 +348,6 @@ static uint64_t epochMilli, epochMicro ;
 static int wiringPiMode = WPI_MODE_UNINITIALISED ;
 static volatile int    pinPass = -1 ;
 static pthread_mutex_t pinMutex ;
-
-static int RaspberryPiModel  = -1;
-static int RaspberryPiLayout = -1;
 
 // Debugging & Return codes
 
@@ -508,39 +412,24 @@ static unsigned long isrDebouncePeriodUs[64];      // 0: debounce is off
 
 static int *pinToGpio ;
 
-// Revision 1, 1.1:
-
-static int pinToGpioR1 [64] =
+static int pinToGpio_HaiBox_5A [64] =
 {
-  17, 18, 21, 22, 23, 24, 25, 4,	// From the Original Wiki - GPIO 0 through 7:	wpi  0 -  7
-   0,  1,				// I2C  - SDA1, SCL1				wpi  8 -  9
-   8,  7,				// SPI  - CE1, CE0				wpi 10 - 11
-  10,  9, 11, 				// SPI  - MOSI, MISO, SCLK			wpi 12 - 14
-  14, 15,				// UART - Tx, Rx				wpi 15 - 16
+   63, 62, // 0, 1
+   36, 46, // 2, 3
+   47, 38, // 4, 5
+  129, 39, // 6, 7
+   40, 32, // 8, 9
+   33, 41, //10,11
+   42,108, //12,13
+   43, 44, //14,15
+   45, 34, //16,17
+   35,131, //18,19
+  132,138, //20,21
+  139,128, //22,23
+  130,136, //24,25
+  133,137, //26,27,
 
 // Padding:
-
-      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 31
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 47
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 63
-} ;
-
-// Revision 2:
-
-static int pinToGpioR2 [64] =
-{
-  17, 18, 27, 22, 23, 24, 25, 4,	// From the Original Wiki - GPIO 0 through 7:	wpi  0 -  7
-   2,  3,				// I2C  - SDA0, SCL0				wpi  8 -  9
-   8,  7,				// SPI  - CE1, CE0				wpi 10 - 11
-  10,  9, 11, 				// SPI  - MOSI, MISO, SCLK			wpi 12 - 14
-  14, 15,				// UART - Tx, Rx				wpi 15 - 16
-  28, 29, 30, 31,			// Rev 2: New GPIOs 8 though 11			wpi 17 - 20
-   5,  6, 13, 19, 26,			// B+						wpi 21, 22, 23, 24, 25
-  12, 16, 20, 21,			// B+						wpi 26, 27, 28, 29
-   0,  1,				// B+						wpi 30, 31
-
-// Padding:
-
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 47
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 63
 } ;
@@ -553,127 +442,34 @@ static int pinToGpioR2 [64] =
 
 static int *physToGpio ;
 
-static int physToGpioR1 [64] =
+static int physToGpio_HaiBox_5A [64] =
 {
-  -1,		// 0
-  -1, -1,	// 1, 2
-   0, -1,
-   1, -1,
-   4, 14,
-  -1, 15,
-  17, 18,
-  21, -1,
-  22, 23,
-  -1, 24,
-  10, -1,
-   9, 25,
-  11,  8,
-  -1,  7,	// 25, 26
+   -1,		 // 0
+   -1, -1, // 1, 2
+   63, -1,
+   62, -1,
+   36, 46,
+   -1, 47,
+   38,129,
+   39, -1,
+   40, 32,
+   -1, 33,
+   41, -1,
+   42,108,
+   43, 44,
+   -1, 45,
+   34, 35,
+  131, -1,
+  132,138,
+  139, -1,
+  128,130,
+  136,133,
+   -1,137, //39,40
 
-                                              -1, -1, -1, -1, -1,	// ... 31
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 47
-  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,	// ... 63
+  // Padding:
+  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 } ;
-
-static int physToGpioR2 [64] =
-{
-  -1,		// 0
-  -1, -1,	// 1, 2
-   2, -1,
-   3, -1,
-   4, 14,
-  -1, 15,
-  17, 18,
-  27, -1,
-  22, 23,
-  -1, 24,
-  10, -1,
-   9, 25,
-  11,  8,
-  -1,  7,	// 25, 26
-
-// B+
-
-   0,  1,
-   5, -1,
-   6, 12,
-  13, -1,
-  19, 16,
-  26, 20,
-  -1, 21,
-
-// the P5 connector on the Rev 2 boards:
-
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  28, 29,
-  30, 31,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-  -1, -1,
-} ;
-
-
-int piBoard() {
-  if (RaspberryPiModel<0) { //need to detect pi model
-    int   model, rev, mem, maker, overVolted;
-    piBoardId (&model, &rev, &mem, &maker, &overVolted);
-  }
-  return RaspberryPiModel<0 ? 0 : 1;
-}
-
-
-int piBoard40Pin() {
-  if (!piBoard()){
-	  // Board not detected
-	  return -1;
-  }
-  switch(RaspberryPiModel){
-	case PI_MODEL_A:
-	case PI_MODEL_B:
-		return 0;
-// PI_MODEL_CM
-// PI_MODEL_CM3
-// PI_MODEL_CM4  
-// PI_MODEL_CM4S
-//     ? guess yes
-	default: 
-		return 1;
-  }
-}
-
-
-int piRP1Model() {
-  switch(RaspberryPiModel){
-    case PI_MODEL_5:
-    case PI_MODEL_CM5:
-    case PI_MODEL_500:
-    case PI_MODEL_CM5L:
-      return 1;
-    default:
-      return 0;
-   }
-}
-
-
-int GetMaxPin() {
-  if (piRP1Model()) {
-    switch(wiringPiMode) {
-      case WPI_MODE_PHYS:
-        return 40;
-      case WPI_MODE_PINS:
-        return 31;
-      default:
-        return 27;
-    }
-  } else {
-    return 63;
-  }
-}
 
 
 int ToBCMPin(int* pin) {
@@ -692,14 +488,11 @@ int ToBCMPin(int* pin) {
     default:
       return FALSE;
   }
-  if (piRP1Model() && *pin>27) {
-    return FALSE;
-  }
   return TRUE;
 }
 
 
-#define RETURN_ON_MODEL5 if (piRP1Model()) { if (wiringPiDebug) printf("Function not supported on Pi5\n");  return; }
+#define RETURN_ON_MODEL5 { if (wiringPiDebug) printf("Function not supported on Pi5\n");  return; }
 
 int FailOnModel5(const char *function) {
   if (piRP1Model()) {
@@ -708,35 +501,6 @@ int FailOnModel5(const char *function) {
   }
   return 0;
 }
-
-// gpioToGPFSEL:
-//	Map a BCM_GPIO pin to it's Function Selection
-//	control port. (GPFSEL 0-5)
-//	Groups of 10 - 3 bits per Function - 30 bits per port
-
-static uint8_t gpioToGPFSEL [] =
-{
-  0,0,0,0,0,0,0,0,0,0,
-  1,1,1,1,1,1,1,1,1,1,
-  2,2,2,2,2,2,2,2,2,2,
-  3,3,3,3,3,3,3,3,3,3,
-  4,4,4,4,4,4,4,4,4,4,
-  5,5,5,5,5,5,5,5,5,5,
-} ;
-
-
-// gpioToShift
-//	Define the shift up for the 3 bits per pin in each GPFSEL port
-
-static uint8_t gpioToShift [] =
-{
-  0,3,6,9,12,15,18,21,24,27,
-  0,3,6,9,12,15,18,21,24,27,
-  0,3,6,9,12,15,18,21,24,27,
-  0,3,6,9,12,15,18,21,24,27,
-  0,3,6,9,12,15,18,21,24,27,
-  0,3,6,9,12,15,18,21,24,27,
-} ;
 
 
 // gpioToGPSET:
@@ -951,23 +715,6 @@ static void setupCheck (const char *fName)
   }
 }
 
-/*
- * gpioMemCheck:
- *	See if we're using the /dev/gpiomem interface, if-so then some operations
- *	can't be done and will crash the Pi.
- *********************************************************************************
- */
-
-static void usingGpioMemCheck (const char *what)
-{
-  if (usingGpioMem)
-  {
-    fprintf (stderr, "%s: Unable to do this when using /dev/gpiomem. Try sudo?\n", what) ;
-    exit (EXIT_FAILURE) ;
-  }
-
-}
-
 
 void PrintSystemStdErr () {
   struct utsname sys_info;
@@ -1028,62 +775,17 @@ void ReportDeviceError(const char *function, int pin, const char *mode, int ret)
  *
  *********************************************************************************
  */
- const char* revfile = "/proc/device-tree/system/linux,revision";
+ const char* revfile = "/etc/haibox-release";
 
 void piGpioLayoutOops (const char *why)
 {
-  fprintf (stderr, "Oops: Unable to determine Raspberry Pi board revision from %s and from /proc/cpuinfo\n", revfile) ;
+  fprintf (stderr, "Oops: Unable to determine board revision from %s\n", revfile) ;
   PrintSystemStdErr();
   fprintf (stderr, " -> %s\n", why) ;
-  fprintf (stderr, " -> WiringPi is designed for Raspberry Pi and can only be used with a Raspberry Pi.\n\n") ;
-  fprintf (stderr, " -> Check at https://github.com/wiringpi/wiringpi/issues.\n\n") ;
+	fprintf (stderr, " ->  You'd best google the error to find out why.\n");
   exit (EXIT_FAILURE) ;
 }
 
-int piGpioLayout (void)
-{
-  piBoard();
-  return RaspberryPiLayout;
-}
-
-/*
- * piBoardRev:
- *	Deprecated, but does the same as piGpioLayout
- *********************************************************************************
- */
-
-int piBoardRev (void)
-{
-  return piGpioLayout () ;
-}
-
-const char* GetPiRevision(char* line, int linelength, unsigned int* revision) {
-
-  const char* c = NULL;
-  uint32_t Revision = 0;
-  _Static_assert(sizeof(Revision)==4, "should be unsigend integer with 4 byte size");
-
-	FILE* fp = fopen(revfile,"rb");
-	if (!fp) {
-    if (wiringPiDebug)
-		  perror(revfile);
-		return NULL; // revision file not found or no access
-	}
-	int result = fread(&Revision, sizeof(Revision), 1, fp);
-	fclose(fp);
-	if (result<1) {
-    if (wiringPiDebug)
-		  perror(revfile);
-		return NULL; // read error
-	}
-	Revision = bswap_32(Revision);
-	snprintf(line, linelength, "Revision\t: %04x", Revision);
-  c =  &line[11];
-  *revision = Revision;
-  if (wiringPiDebug)
-	  printf("GetPiRevision: Revision string: \"%s\" (%s) - 0x%x\n", line, c, *revision);
-	return c;
-}
 
 /*
  * piBoardId:
@@ -1152,142 +854,61 @@ const char* GetPiRevision(char* line, int linelength, unsigned int* revision) {
  *********************************************************************************
  */
 
-void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
+void piBoardId (int *model)
 {
+	FILE *recv_fd;
   const int maxlength = 120;
-  char line [maxlength+1] ;
-  const char *c ;
-  unsigned int revision = 0x00 ;
-  int bRev, bType, bProc, bMfg, bMem, bWarranty ;
+  char line [maxlength+1];
+  char revision[maxlength+1];
+  char *c;
+	unsigned int i = 0;
 
   //piGpioLayoutOops ("this is only a test case");
 
-  c = GetPiRevision(line, maxlength,  &revision); // device tree
-  if (NULL==c) {
-    c = GetPiRevisionLegacy(line, maxlength, &revision); // proc/cpuinfo
-  }
-  if (NULL==c) {
-    piGpioLayoutOops ("GetPiRevision failed!") ;
+	if ((recv_fd = fopen (revfile, "r")) == NULL) {
+			piGpioLayoutOops ("Unable to open /etc/haibox-release.");
   }
 
-  if ((revision &  (1 << 23)) != 0)	// New style, not available for Raspberry Pi 1B/A, CM
-  {
-    if (wiringPiDebug)
-      printf ("piBoardId: New Way: revision is: %08X\n", revision) ;
-
-    bRev      = (revision & (0x0F <<  0)) >>  0 ;
-    bType     = (revision & (0xFF <<  4)) >>  4 ;
-    bProc     = (revision & (0x0F << 12)) >> 12 ;	// Not used for now.
-    bMfg      = (revision & (0x0F << 16)) >> 16 ;
-    bMem      = (revision & (0x07 << 20)) >> 20 ;
-    bWarranty = (revision & (0x03 << 24)) != 0 ;
-
-    // Ref: https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#raspberry-pi-revision-codes
-    *model    = bType ;
-    *rev      = bRev ;
-    *mem      = bMem ;
-    *maker    = bMfg  ;
-    *warranty = bWarranty ;
-    RaspberryPiLayout = GPIO_LAYOUT_DEFAULT ; //default
-
-    if (wiringPiDebug)
-      printf ("piBoardId: rev: %d, type: %d, proc: %d, mfg: %d, mem: %d, warranty: %d\n",
-		bRev, bType, bProc, bMfg, bMem, bWarranty) ;
-  }
-  else					// Old way
-  {
-    if (wiringPiDebug)
-      printf ("piBoardId: Old Way: revision is: %s\n", c) ;
-
-    if (!isdigit (*c))
-      piGpioLayoutOops ("Bogus \"Revision\" line (no digit at start of revision)") ;
-
-// Make sure its long enough
-
-    if (strlen (c) < 4)
-      piGpioLayoutOops ("Bogus \"Revision\" line (not long enough)") ;
-
-// If longer than 4, we'll assume it's been overvolted
-
-    *warranty = strlen (c) > 4 ;
-
-// Extract last 4 characters:
-
-    c = c + strlen (c) - 4 ;
-
-// Fill out the replys as appropriate
-    RaspberryPiLayout = GPIO_LAYOUT_DEFAULT ; //default
-    if      (strcmp (c, "0002") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1   ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; RaspberryPiLayout = GPIO_LAYOUT_PI1_REV1; }
-    else if (strcmp (c, "0003") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_1 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; RaspberryPiLayout = GPIO_LAYOUT_PI1_REV1; }
-
-    else if (strcmp (c, "0004") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_2 ; *mem = 0 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "0005") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_2 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; }
-    else if (strcmp (c, "0006") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_2 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; }
-
-    else if (strcmp (c, "0007") == 0) { *model = PI_MODEL_A  ; *rev = PI_VERSION_1_2 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; }
-    else if (strcmp (c, "0008") == 0) { *model = PI_MODEL_A  ; *rev = PI_VERSION_1_2 ; *mem = 0 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "0009") == 0) { *model = PI_MODEL_A  ; *rev = PI_VERSION_1_2 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; }
-
-    else if (strcmp (c, "000d") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_EGOMAN ; }
-    else if (strcmp (c, "000e") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "000f") == 0) { *model = PI_MODEL_B  ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_EGOMAN ; }
-
-    else if (strcmp (c, "0010") == 0) { *model = PI_MODEL_BP ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "0013") == 0) { *model = PI_MODEL_BP ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_EMBEST ; }
-    else if (strcmp (c, "0016") == 0) { *model = PI_MODEL_BP ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "0019") == 0) { *model = PI_MODEL_BP ; *rev = PI_VERSION_1_2 ; *mem = 1 ; *maker = PI_MAKER_EGOMAN ; }
-
-    else if (strcmp (c, "0011") == 0) { *model = PI_MODEL_CM ; *rev = PI_VERSION_1_1 ; *mem = 1 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "0014") == 0) { *model = PI_MODEL_CM ; *rev = PI_VERSION_1_1 ; *mem = 1 ; *maker = PI_MAKER_EMBEST ; }
-    else if (strcmp (c, "0017") == 0) { *model = PI_MODEL_CM ; *rev = PI_VERSION_1_1 ; *mem = 1 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "001a") == 0) { *model = PI_MODEL_CM ; *rev = PI_VERSION_1_1 ; *mem = 1 ; *maker = PI_MAKER_EGOMAN ; }
-
-    else if (strcmp (c, "0012") == 0) { *model = PI_MODEL_AP ; *rev = PI_VERSION_1_1 ; *mem = 0 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "0015") == 0) { *model = PI_MODEL_AP ; *rev = PI_VERSION_1_1 ; *mem = 1 ; *maker = PI_MAKER_EMBEST ; }
-    else if (strcmp (c, "0018") == 0) { *model = PI_MODEL_AP ; *rev = PI_VERSION_1_1 ; *mem = 0 ; *maker = PI_MAKER_SONY   ; }
-    else if (strcmp (c, "001b") == 0) { *model = PI_MODEL_AP ; *rev = PI_VERSION_1_1 ; *mem = 0 ; *maker = PI_MAKER_EGOMAN ; }
-
-    else                              { *model = 0           ; *rev = 0              ; *mem = 0 ; *maker = 0               ; }
+	while (fgets (line, maxlength, recv_fd) != NULL) {
+	  if (strncmp (line, "BOARD=", 6) == 0)
+		  break;
   }
 
-  RaspberryPiModel = *model;
+	fclose (recv_fd) ;
 
-  switch (RaspberryPiModel){
-    case PI_MODEL_A:
-    case PI_MODEL_B:
-    case PI_MODEL_AP:
-    case PI_MODEL_BP:
-    case PI_ALPHA:
-    case PI_MODEL_CM:
-    case PI_MODEL_ZERO:
-    case PI_MODEL_ZERO_W:
-      piGpioBase = GPIO_PERI_BASE_OLD ;
-      piGpioPupOffset = GPPUD ;
+	if (strncmp (line, "BOARD=", 6) != 0)
+		piGpioLayoutOops ("No \"Revision\" line") ;
+
+	if (wiringPiDebug)
+		printf ("piBoardId: Revision string: %s\n", line) ;
+
+  // Chomp trailing CR/NL
+	for (c = &line [strlen (line) - 1] ; (*c == '\n') || (*c == '\r') ; --c)
+		*c = 0 ;
+
+  // Need to work out if it's using the new or old encoding scheme:
+	// Scan to the first character of the revision number
+	for (c = line ; *c ; ++c)
+    if (*c == '=')
       break ;
 
-    case PI_MODEL_4B:
-    case PI_MODEL_400:
-    case PI_MODEL_CM4:
-    case PI_MODEL_CM4S: 
-      piGpioBase = GPIO_PERI_BASE_2711 ;
-      piGpioPupOffset = GPPUPPDN0 ;
-      break ;
+	if (*c != '=')
+    piGpioLayoutOops ("Revision line (no equal)");
 
-    case PI_MODEL_5:
-    case PI_MODEL_CM5:
-    case PI_MODEL_500:
-    case PI_MODEL_CM5L:
-      piGpioBase = GPIO_PERI_BASE_2712 ;
-      piGpioPupOffset = 0 ;
-      break ;
+  c++;
+	for (i = 0; *c ; c++)
+		revision[i++] = *c;
+	revision[i] = '.';
 
-    default:
-      piGpioBase = GPIO_PERI_BASE_2835 ;
-      piGpioPupOffset = GPPUD ;
-      break ;
-  }
+	if (wiringPiDebug)
+		printf ("piBoardId: Board string: %s\n", revision) ;
+
+	/**/ if (strncmp(revision, "haibox-5a.", 10) == 0) { *model = PI_MODEL_HAIBOX_5A; }
+  else { piGpioLayoutOops ("Unkown board model"); }
+
+	if (wiringPiDebug)
+		printf("piBoardId: model = %d\n", *model);
 }
-
 
 
 /*
@@ -1322,7 +943,7 @@ int physPinToGpio (int physPin)
  *********************************************************************************
  */
 void setPadDrivePin (int pin, int value) {
-  if (!piRP1Model() || !ToBCMPin(&pin)) {
+  if (ToBCMPin(&pin)) {
     return;
   }
 
@@ -1403,54 +1024,11 @@ void setPadDrive (int group, int value)
 
 int getAlt (int pin)
 {
-  int alt;
-
   if (!ToBCMPin(&pin)) {
     return 0;
   }
 
-  if (piRP1Model()) {
-    alt = (gpio[2*pin+1] & RP1_FSEL_NONE_HW); //0-4  function
-
-  /*
-  BCM:
-  000b = GPIO Pin 9 is an input
-  001b = GPIO Pin 9 is an output
-  100b = GPIO Pin 9 takes alternate function 0
-  101b = GPIO Pin 9 takes alternate function 1
-  110b = GPIO Pin 9 takes alternate function 2
-  111b = GPIO Pin 9 takes alternate function 3
-  011b = GPIO Pin 9 takes alternate function 4
-  010b = GPIO Pin 9 takes alternate function 5
-  RP1:
-   8 = alternate function 6
-   9 = alternate function 7
-  10 = alternate function 8
-  11 = alternate function 9
-  */
-    switch(alt) {
-      case 0: return FSEL_ALT0;
-      case 1: return FSEL_ALT1;
-      case 2: return FSEL_ALT2;
-      case 3: return FSEL_ALT3;
-      case 4: return FSEL_ALT4;
-      case RP1_FSEL_GPIO: {
-          unsigned int outputmask = gpio[2*pin] & 0x3000;   //Bit13-OETOPAD + Bit12-OEFROMPERI
-          return (outputmask==0x3000) ? FSEL_OUTP : FSEL_INPT;
-        }
-      case 6: return FSEL_ALT6;
-      case 7: return FSEL_ALT7;
-      case 8: return FSEL_ALT8;
-      case RP1_FSEL_NONE: return FSEL_ALT9;
-      default:return alt;
-    }
-  } else {
-    int fSel    = gpioToGPFSEL [pin] ;
-    int shift   = gpioToShift  [pin] ;
-
-    alt = (*(gpio + fSel) >> shift) & 7 ;
-  }
-  return alt;
+  return rk3588_getAlt(pin);
 }
 
 
@@ -1768,22 +1346,6 @@ int OpenAndCheckGpioChip(int GPIONo, const char* label, const unsigned int lines
   return Fd;
 }
 
-int wiringPiGpioDeviceGetFd() {
-  if (chipFd<0) {
-    piBoard();
-    if (piRP1Model()) {
-      chipFd = OpenAndCheckGpioChip(0, "rp1", 54);   // /dev/gpiochip0 @ Pi5 since Kernel 6.6.47
-      if (chipFd<0) {
-        chipFd = OpenAndCheckGpioChip(4, "rp1", 54);  // /dev/gpiochip4 @ Pi5 with older kernel
-      }
-    } else {
-      // not all Pis have same number of lines: Pi0, Pi1, Pi3, 54 lines, Pi4, 58 lines (CM ?), see #280, so this check is disabled
-      chipFd = OpenAndCheckGpioChip(0, "bcm", 0);
-    }
-  }
-  return chipFd;
-}
-
 void releaseLine(int pin) {
 
   if (wiringPiDebug)
@@ -1811,9 +1373,6 @@ int requestLineV2(int pin, const unsigned int lineRequestFlags) {
   }
 
   //requested line
-  if (wiringPiGpioDeviceGetFd()<0) {
-    return -1;  // error
-  }
   
   memset(&req, 0, sizeof(req));
   memset(&config, 0, sizeof(config));
@@ -1875,54 +1434,7 @@ void pinModeAlt (int pin, int mode)
     return;
   }
 
-  if (piRP1Model()) {
-    //confusion! diffrent to to BCM!  this is taking directly the value for the register
-    int modeRP1;
-    switch(mode) {
-      case FSEL_ALT0:
-        modeRP1 = 0;
-        break;
-      case FSEL_ALT1:
-        modeRP1 = 1;
-        break;
-      case FSEL_ALT2:
-        modeRP1 = 2;
-        break;
-      case FSEL_ALT3:
-        modeRP1 = 3;
-        break;
-      case FSEL_ALT4:
-        modeRP1 = 4;
-        break;
-      case FSEL_ALT5:
-        modeRP1 = 5;
-        break;
-      case FSEL_ALT6:
-        modeRP1 = 6;
-        break;
-      case FSEL_ALT7:
-        modeRP1 = 7;
-        break;
-      case FSEL_ALT8:
-        modeRP1 = 8;
-        break;
-      case FSEL_OUTP:
-      case FSEL_INPT:
-        modeRP1 = RP1_FSEL_GPIO;
-        break;
-      default:
-        fprintf(stderr, "pinModeAlt: invalid mode %d\n", mode);
-        return;
-    }
-    //printf("pinModeAlt: Pi5 alt pin %d to %d\n", pin, modeRP1);
-    gpio[2*pin+1] = (modeRP1 & RP1_FSEL_NONE_HW) | RP1_DEBOUNCE_DEFAULT; //0-4  function, 5-11 debounce time
-  } else {
-    int fSel  = gpioToGPFSEL [pin] ;
-    int shift = gpioToShift  [pin] ;
-
-    *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) | ((mode & 0x7) << shift) ;
-  }
- }
+}
 
 
 /*
@@ -1968,7 +1480,6 @@ void pinModeDevice (int pin, int mode) {
 
 void pinMode (int pin, int mode)
 {
-  int    fSel, shift, alt ;
   struct wiringPiNodeStruct *node = wiringPiNodes ;
   int origPin = pin ;
 
@@ -1977,29 +1488,10 @@ void pinMode (int pin, int mode)
 
   setupCheck ("pinMode") ;
 
-  if ((pin & PI_GPIO_MASK) == 0)		// On-board pin
+  if ((origPin & PI_GPIO_MASK) == 0)		// On-board pin
   {
-    switch(wiringPiMode) {
-      default: //WPI_MODE_GPIO_SYS
-        fprintf(stderr, "pinMode: invalid mode\n");
-        return;
-      case WPI_MODE_PINS:
-        pin = pinToGpio [pin];
-        break;
-      case WPI_MODE_PHYS:
-        pin = physToGpio [pin];
-        break;
-      case WPI_MODE_GPIO_DEVICE_BCM:
-        pinModeDevice(pin, mode);
-        return;
-      case WPI_MODE_GPIO_DEVICE_WPI:
-        pinModeDevice(pinToGpio[pin], mode);
-        return;
-      case WPI_MODE_GPIO_DEVICE_PHYS:
-        pinModeDevice(physToGpio[pin], mode);
-        return;
-      case WPI_MODE_GPIO:
-        break;
+    if (!ToBCMPin(&origPin)) {
+      return;
     }
 
     if (wiringPiDebug)
@@ -2008,39 +1500,10 @@ void pinMode (int pin, int mode)
     softPwmStop  (origPin) ;
     softToneStop (origPin) ;
 
-    fSel    = gpioToGPFSEL [pin] ;
-    shift   = gpioToShift  [pin] ;
-
     if (INPUT==mode  || PM_OFF==mode) {
-      if (piRP1Model()) {
-        if (INPUT==mode) {
-          pads[1+pin] = (pin<=8) ? RP1_PAD_DEFAULT_0TO8 : RP1_PAD_DEFAULT_FROM9;
-          gpio[2*pin+1] = RP1_FSEL_GPIO | RP1_DEBOUNCE_DEFAULT; // GPIO
-          rio[RP1_RIO_OE + RP1_CLR_OFFSET] = 1<<pin;            // Input
-        } else  { //PM_OFF
-          pads[1+pin] = (pin<=8) ? RP1_PAD_IC_DEFAULT_0TO8 : RP1_PAD_IC_DEFAULT_FROM9;
-          gpio[2*pin+1] = RP1_IRQRESET | RP1_FSEL_NONE_HW | RP1_DEBOUNCE_DEFAULT; // default but with irq reset
-        }
-      } else {
-        *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) ; // Sets bits to zero = input
-      }
-      if (PM_OFF==mode && !usingGpioMem && pwm && gpioToPwmALT[pin]>0) { //PWM pin -> reset
-        pwmWrite(origPin, 0);
-        int channel = gpioToPwmPort[pin];
-        if (channel>=0 && channel<=3 && piRP1Model()) {
-          unsigned int ctrl = pwm[RP1_PWM0_GLOBAL_CTRL];
-          pwm[RP1_PWM0_GLOBAL_CTRL] = (ctrl & ~(1<<channel)) | RP1_PWM_CTRL_SETUPDATE;
-          //printf("Disable PWM0[%d] (0x%08X->0x%08X)\n", channel, ctrl, pwm[RP1_PWM0_GLOBAL_CTRL]);
-        }
-      }
+      rk3588_pinMode(origPin, INPUT);
     } else if (mode == OUTPUT) {
-      if (piRP1Model()) {
-        pads[1+pin] = (pin<=8) ? RP1_PAD_DEFAULT_0TO8 : RP1_PAD_DEFAULT_FROM9;
-        gpio[2*pin+1] = RP1_FSEL_GPIO | RP1_DEBOUNCE_DEFAULT; // GPIO
-        rio[RP1_RIO_OE + RP1_SET_OFFSET] = 1<<pin;            // Output
-      } else {
-        *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) | (1 << shift) ;
-      }
+      rk3588_pinMode(origPin, OUTPUT);
     } else if (mode == SOFT_PWM_OUTPUT) {
       softPwmCreate (origPin, 0, 100) ;
     } else if (mode == SOFT_TONE_OUTPUT) {
@@ -2051,43 +1514,11 @@ void pinMode (int pin, int mode)
       pwmSetMode (PWM_MODE_MS) ;
     }
     else if (PWM_OUTPUT==mode || PWM_MS_OUTPUT==mode || PWM_BAL_OUTPUT==mode) {
-
-      usingGpioMemCheck("pinMode PWM") ;  // exit on error!
-      alt = gpioToPwmALT[pin];
-      if (0==alt) {	// Not a hardware capable PWM pin
-	      return;
-      }
-      int channel = gpioToPwmPort[pin];
-      if (piRP1Model()) {
-        if (channel>=0 && channel<=3) {
-          // enable channel pwm m:s mode
-          pwm[RP1_PWM0_CHAN_START+RP1_PWM0_CHAN_OFFSET*channel+RP1_PWM0_CHAN_CTRL]  = (RP1_PWM_TRAIL_EDGE_MS | RP1_PWM_FIFO_POP_MASK);
-          // enable pwm global
-          unsigned int ctrl = pwm[RP1_PWM0_GLOBAL_CTRL];
-          pwm[RP1_PWM0_GLOBAL_CTRL] = ctrl | (1<<channel) | RP1_PWM_CTRL_SETUPDATE;
-          //printf("Enable PWM0[%d] (0x%08X->0x%08X)\n", channel, ctrl, pwm[RP1_PWM0_GLOBAL_CTRL]);
-          //change GPIO mode
-          pads[1+pin] = RP1_PAD_DEFAULT_FROM9;  // enable output
-          pinModeAlt(origPin, alt); //switch to PWM mode
-        }
-      } else {
-        // Set pin to PWM mode
-        *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) | (alt << shift) ;
-        delayMicroseconds (110) ;		// See comments in pwmSetClockWPi
-
-        if (PWM_OUTPUT==mode || PWM_BAL_OUTPUT==mode) {
-          pwmSetMode(PWM_MODE_BAL);	// Pi default mode
-        } else {
-          pwmSetMode(PWM_MODE_MS);
-        }
-      }
-      if (PWM_OUTPUT==mode) {  // predefine
-        pwmSetRange (1024) ;		// Default range of 1024
-        pwmSetClock (32) ;		// 19.2 / 32 = 600KHz - Also starts the PWM
-      }
+      rk3588_pinMode(origPin, PWM_OUTPUT);
     }
     else if (mode == GPIO_CLOCK)
     {
+#if 0
       RETURN_ON_MODEL5
       if ((alt = gpioToGpClkALT0 [pin]) == 0)	// Not a GPIO_CLOCK pin
 	      return ;
@@ -2099,6 +1530,7 @@ void pinMode (int pin, int mode)
       *(gpio + fSel) = (*(gpio + fSel) & ~(7 << shift)) | (alt << shift) ;
       delayMicroseconds (110) ;
       gpioClockSet      (pin, 100000) ;
+#endif
     }
   }
   else
@@ -2146,65 +1578,11 @@ void pullUpDnControl (int pin, int pud)
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
-    switch(wiringPiMode) {
-      default: //WPI_MODE_GPIO_SYS
-        fprintf(stderr, "pinMode: invalid mode\n");
-        return;
-      case WPI_MODE_PINS:
-        pin = pinToGpio [pin];
-        break;
-      case WPI_MODE_PHYS:
-        pin = physToGpio [pin];
-        break;
-      case WPI_MODE_GPIO_DEVICE_BCM:
-        return pullUpDnControlDevice(pin, pud);
-      case WPI_MODE_GPIO_DEVICE_WPI:
-        return pullUpDnControlDevice(pinToGpio[pin], pud);
-      case WPI_MODE_GPIO_DEVICE_PHYS:
-        return pullUpDnControlDevice(physToGpio[pin], pud);
-      case WPI_MODE_GPIO:
-        break;
+    if (!ToBCMPin(&pin)) {
+      return;
     }
 
-    if (piRP1Model()) {
-      unsigned int pullbits = pads[1+pin] & RP1_INV_PUD_MASK; // remove bits
-      switch (pud){
-        case PUD_OFF:  pads[1+pin] = pullbits;                break;
-        case PUD_UP:   pads[1+pin] = pullbits | RP1_PUD_UP;   break;
-        case PUD_DOWN: pads[1+pin] = pullbits | RP1_PUD_DOWN; break;
-        default: return ; /* An illegal value */
-      }
-    } else {
-      if (piGpioPupOffset == GPPUPPDN0)
-      {
-        // Pi 4B pull up/down method
-        int pullreg = GPPUPPDN0 + (pin>>4);
-        int pullshift = (pin & 0xf) << 1;
-        unsigned int pullbits;
-        unsigned int pull;
-
-        switch (pud) {
-         case PUD_OFF:  pull = 0; break;
-         case PUD_UP:   pull = 1; break;
-         case PUD_DOWN: pull = 2; break;
-         default: return ; /* An illegal value */
-        }
-
-        pullbits = *(gpio + pullreg);
-        pullbits &= ~(3 << pullshift);
-        pullbits |= (pull << pullshift);
-        *(gpio + pullreg) = pullbits;
-      }
-      else
-      {
-        // legacy pull up/down method
-        *(gpio + GPPUD)              = pud & 3 ;		delayMicroseconds (5) ;
-        *(gpio + gpioToPUDCLK [pin]) = 1 << (pin & 31) ;	delayMicroseconds (5) ;
-
-        *(gpio + GPPUD)              = 0 ;			delayMicroseconds (5) ;
-        *(gpio + gpioToPUDCLK [pin]) = 0 ;			delayMicroseconds (5) ;
-      }
-    }
+    rk3588_pullUpDnControl(pin, pud);
   }
   else						// Extension module
   {
@@ -2278,38 +1656,11 @@ int digitalRead (int pin)
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
-    switch(wiringPiMode) {
-      default: //WPI_MODE_GPIO_SYS
-        fprintf(stderr, "digitalRead: invalid mode\n");
-        return LOW;
-      case WPI_MODE_PINS:
-        pin = pinToGpio [pin];
-        break;
-      case WPI_MODE_PHYS:
-        pin = physToGpio [pin];
-        break;
-      case WPI_MODE_GPIO_DEVICE_BCM:
-        return digitalReadDeviceV2(pin);
-      case WPI_MODE_GPIO_DEVICE_WPI:
-        return digitalReadDeviceV2(pinToGpio[pin]);
-      case WPI_MODE_GPIO_DEVICE_PHYS:
-        return digitalReadDeviceV2(physToGpio[pin]);
-      case WPI_MODE_GPIO:
-        break;
+    if (!ToBCMPin(&pin)) {
+      return 0;
     }
 
-    if (ISRP1MODEL) {
-      switch(gpio[2*pin] & RP1_STATUS_LEVEL_MASK) {
-        default: // 11 or 00 not allowed, give LOW!
-        case RP1_STATUS_LEVEL_LOW:  return LOW ;
-        case RP1_STATUS_LEVEL_HIGH: return HIGH ;
-      }
-    } else {
-      if ((*(gpio + gpioToGPLEV [pin]) & (1 << (pin & 31))) != 0)
-        return HIGH ;
-      else
-        return LOW ;
-    }
+    return rk3588_digitalRead(pin);
   }
   else
   {
@@ -2362,43 +1713,11 @@ void digitalWrite (int pin, int value)
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
-    switch(wiringPiMode) {
-      default: //WPI_MODE_GPIO_SYS
-        fprintf(stderr, "digitalWrite: invalid mode\n");
-        return;
-      case WPI_MODE_PINS:
-        pin = pinToGpio [pin];
-        break;
-      case WPI_MODE_PHYS:
-        pin = physToGpio [pin];
-        break;
-      case WPI_MODE_GPIO_DEVICE_BCM:
-        digitalWriteDeviceV2(pin, value);
-        return;
-      case WPI_MODE_GPIO_DEVICE_WPI:
-        digitalWriteDeviceV2(pinToGpio[pin], value);
-        return;
-      case WPI_MODE_GPIO_DEVICE_PHYS:
-        digitalWriteDeviceV2(physToGpio[pin], value);
-        return;
-      case WPI_MODE_GPIO:
-        break;
+    if (!ToBCMPin(&pin)) {
+      return;
     }
 
-    if (ISRP1MODEL) {
-      if (value == LOW) {
-        //printf("Set pin %d >>0x%08x<< to low\n", pin, 1<<pin);
-        rio[RP1_RIO_OUT + RP1_CLR_OFFSET] = 1<<pin;
-      } else {
-        //printf("Set pin %d >>0x%08x<< to high\n", pin, 1<<pin);
-        rio[RP1_RIO_OUT + RP1_SET_OFFSET] = 1<<pin;
-      }
-    } else {
-      if (value == LOW)
-        *(gpio + gpioToGPCLR [pin]) = 1 << (pin & 31) ;
-      else
-        *(gpio + gpioToGPSET [pin]) = 1 << (pin & 31) ;
-    }
+    rk3588_digitalWrite(pin, value);
   }
   else
   {
@@ -2420,29 +1739,7 @@ void pwmWrite (int pin, int value)
       return;
     }
 
-    /* would be possible on ms mode but not on bal, deactivated, use pwmc modify instead
-    if (piGpioBase == GPIO_PERI_BASE_2711) {
-      value = (OSC_FREQ_BCM2711*value)/OSC_FREQ_DEFAULT;
-    }
-    */
-    usingGpioMemCheck ("pwmWrite") ;
-    int channel = gpioToPwmPort[pin];
-    int readback = 0x00;
-    if (piRP1Model()) {
-      if (channel>=0 && channel<=3) {
-        unsigned int addr = RP1_PWM0_CHAN_START+RP1_PWM0_CHAN_OFFSET*channel+RP1_PWM0_CHAN_DUTY;
-        pwm[addr] = value;
-        readback = pwm[addr];
-      } else {
-        fprintf(stderr, "pwmWrite: invalid channel at GPIO pin %d \n", pin);
-      }
-    } else {
-      *(pwm + channel) = value ;
-      readback = *(pwm + channel);
-    }
-    if (wiringPiDebug) {
-      printf ("PWM value(duty): %u. Current register: 0x%08X\n", value, readback);
-    }
+    rk3588_pwmWrite(pin, value);
   }
   else
   {
@@ -2562,10 +1859,7 @@ void digitalWriteByte (const int value)
 unsigned int digitalReadByte (void)
 {
   int pin, x ;
-  uint32_t raw ;
   uint32_t data = 0 ;
-
-  FailOnModel5("digitalReadByte");
 
   if (wiringPiMode == WPI_MODE_GPIO_SYS)
   {
@@ -2573,11 +1867,10 @@ unsigned int digitalReadByte (void)
   }
   else
   {
-    raw = *(gpio + gpioToGPLEV [0]) ; // First bank for these pins
-    for (pin = 0 ; pin < 8 ; ++pin)
+    for (pin = 0 ; pin < 32 ; ++pin)
     {
-      x = pinToGpio [pin] ;
-      data = (data << 1) | (((raw & (1 << x)) == 0) ? 0 : 1) ;
+      x = digitalRead(pin);
+      data = (data << 1) | x ;
     }
   }
   return data ;
@@ -2645,7 +1938,7 @@ struct WPIWfiStatus waitForInterrupt2(int pin, int edgeMode, int ms, unsigned lo
   
   memset(&wfiStatus, 0, sizeof(wfiStatus));
   /* open gpio */
-  if (wiringPiGpioDeviceGetFd()<0 || !ToBCMPin(&pin)) {
+  if (!ToBCMPin(&pin)) {
     wfiStatus.statusOK = -1;
     return wfiStatus;
   }
@@ -2888,10 +2181,6 @@ void *interruptHandlerV2(void *arg)
   struct timespec tspec = {0, 5e5};  /* 0.5 ms timeout {0, 1e6} */
   
   pin = *(int *)arg;
-
-  if (wiringPiGpioDeviceGetFd()<0) {
-    return NULL;
-  }
     
   EdgeMode = isrEdgeMode[pin];
   debounce_period_us = isrDebouncePeriodUs[pin];
@@ -3285,125 +2574,6 @@ void wiringPiVersion (int *major, int *minor)
   *minor = VERSION_MINOR ;
 }
 
-
-int wiringPiUserLevelAccess(void)
-{
-  struct stat statBuf ;
-  const char* gpiomemModule = gpiomem_BCM;
-
-  piBoard();
-  if (piRP1Model()) {
-    gpiomemModule = gpiomem_RP1;
-  }
-
-  return stat(gpiomemModule, &statBuf) == 0 ? 1 : 0;
-}
-
-
-int CheckPCIeFileContent(const char* pcieaddress, const char* filename, const char* content) {
-  char file_path[512];
-  int Found = 0;
-
-  snprintf(file_path, sizeof(file_path), "%s/%s/%s", pcie_path, pcieaddress, filename);
-  if (wiringPiDebug) { printf("Open: %s  ->", file_path); }
-  FILE *device_file = fopen(file_path, "r");
-  if (device_file != NULL) {
-    char buffer[64];
-    if (fgets(buffer, sizeof(buffer), device_file) != NULL) {
-      if (wiringPiDebug) { printf("  %s", buffer); }
-      if (strstr(buffer, content) != NULL) {
-        Found = 1;
-        if (wiringPiDebug) { printf("    >> correct\n"); }
-      } else {
-        if (wiringPiDebug) { printf("    >> wrong\n"); }
-      }
-    }
-    fclose(device_file);
-  } else {
-    if (wiringPiDebug) { perror("fopen"); };
-  }
-  return Found;
-}
-
-
-void GetRP1Memory() {
-
-    pciemem_RP1[0] = '\0';
-    DIR *dir = opendir(pcie_path);
-    struct dirent *entry;
-
-    if (dir == NULL) {
-        if (wiringPiDebug) { perror("opendir"); };
-        return;
-    }
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_LNK) {
-            if (CheckPCIeFileContent(entry->d_name, "device", pciemem_RP1_Device) &&
-                CheckPCIeFileContent(entry->d_name, "vendor", pciemem_RP1_Ventor)) {
-              snprintf(pciemem_RP1, sizeof(pciemem_RP1), "%s/%s/%s", pcie_path, entry->d_name, pciemem_RP1_bar);
-              if (wiringPiDebug) { printf("RP1 device memory found at '%s'\n", pciemem_RP1); }
-              break;
-            }
-        }
-    }
-
-    closedir(dir);
-}
-
-
-int wiringPiGlobalMemoryAccess(void)
-{
-  const char* gpiomemGlobal;
-  int fd=-1;
-  unsigned int MMAP_size;
-  unsigned int BaseAddr, PWMAddr;
-
-  piBoard();
-  if (piRP1Model()) {
-    GetRP1Memory(pciemem_RP1, sizeof(pciemem_RP1));
-    gpiomemGlobal = pciemem_RP1;
-    MMAP_size = pciemem_RP1_Size;
-    BaseAddr  = 0x00000000;
-    PWMAddr	  = 0x00000000;  //not supported so far
-  } else {
-    gpiomemGlobal = gpiomem_global;
-    MMAP_size = BLOCK_SIZE;
-    BaseAddr	= piGpioBase + 0x00200000 ;
-    PWMAddr	  = piGpioBase + 0x0020C000 ;
-  }
-
-  if ((fd = open (gpiomemGlobal, O_RDWR | O_SYNC | O_CLOEXEC)) >0) {
-    int returnvalue = 1; // OK
-
-    uint32_t * lgpio = (uint32_t *)mmap(0, MMAP_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, BaseAddr) ;
-    if (lgpio == MAP_FAILED) {
-      returnvalue = 0;
-      if (wiringPiDebug)
-        fprintf(stderr,"wiringPiGlobalMemoryAccess: mmap (GPIO 0x%X,0x%X) failed: %s\n", BaseAddr, MMAP_size, strerror (errno)) ;
-    } else {
-      munmap(lgpio, MMAP_size);
-      if (piRP1Model()) {
-        returnvalue = 2;    // GPIO & PWM accessible (same area, nothing to mmap)
-      } else {
-        //check PWM area
-        uint32_t* lpwm = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, PWMAddr) ;
-        if (lpwm == MAP_FAILED) {
-          returnvalue = 1;    // only GPIO accessible
-          if (wiringPiDebug)
-            fprintf(stderr,"wiringPiGlobalMemoryAccess: mmap (PWM 0x%X,0x%X) failed: %s\n", PWMAddr, MMAP_size, strerror (errno)) ;
-        } else {
-          returnvalue = 2;  // GPIO & PWM accessible
-          munmap(lpwm, BLOCK_SIZE);
-        }
-      }
-    }
-
-    close(fd);
-    return returnvalue;
-  }
-  return 0;  // Failed!
-}
-
 /*
  * wiringPiSetup:
  *	Must be called once at the start of your program execution.
@@ -3418,7 +2588,7 @@ int wiringPiGlobalMemoryAccess(void)
 int wiringPiSetup (void)
 {
   int   fd ;
-  int   model, rev, mem, maker, overVolted ;
+  int   model ;
 
   if (wiringPiSetuped)
     return 0 ;
@@ -3440,24 +2610,19 @@ int wiringPiSetup (void)
 //	and if we're running on a compute module, then wiringPi pin numbers
 //	don't really mean anything, so force native BCM mode anyway.
 
-  piBoardId (&model, &rev, &mem, &maker, &overVolted) ;
+  piBoardId (&model) ;
 
-  if ((model == PI_MODEL_CM) ||
-      (model == PI_MODEL_CM3) ||
-      (model == PI_MODEL_CM3P))
-    wiringPiMode = WPI_MODE_GPIO ;
-  else
-    wiringPiMode = WPI_MODE_PINS ;
+  wiringPiMode = WPI_MODE_PINS ;
 
-  if (piGpioLayout () == GPIO_LAYOUT_PI1_REV1)	// A, B, Rev 1, 1.1
-  {
-    pinToGpio =  pinToGpioR1 ;
-    physToGpio = physToGpioR1 ;
-  }
-  else 					// A2, B2, A+, B+, CM, Pi2, Pi3, Zero, Zero W, Zero 2 W
-  {
-    pinToGpio =  pinToGpioR2 ;
-    physToGpio = physToGpioR2 ;
+	switch (model) {
+    case PI_MODEL_HAIBOX_5A:
+      pinToGpio =  pinToGpio_HaiBox_5A;
+      physToGpio = physToGpio_HaiBox_5A;
+      rk3588_setPinMask(model);
+      break;
+    default:
+      wiringPiFailure(WPI_ALMOST, "Oops - unable to determine board type... model: %d\n", model);
+      break;
   }
 
 // Open the master /dev/ memory control device
@@ -3465,150 +2630,95 @@ int wiringPiSetup (void)
 //	Try /dev/mem. If that fails, then
 //	try /dev/gpiomem. If that fails then game over.
 
-  const char* gpiomemGlobal = gpiomem_global;
-  const char* gpiomemModule = gpiomem_BCM;
+  // const char* gpiomemGlobal = gpiomem_global;
 
-  if (piRP1Model()) {
-    GetRP1Memory();
-    gpiomemGlobal = pciemem_RP1;
-    gpiomemModule = gpiomem_RP1;
-
-    // PWM alt pins @RP1 - need to be translated to RP1_FSEL with pinModeAlt
-    gpioToPwmALT[12] = FSEL_ALT0;
-    gpioToPwmALT[13] = FSEL_ALT0;
-    gpioToPwmALT[18] = FSEL_ALT3;
-    gpioToPwmALT[19] = FSEL_ALT3;
-    //PWM0 channel @RP1
-    gpioToPwmPort[12] = 0;
-    gpioToPwmPort[13] = 1;
-    gpioToPwmPort[18] = 2;
-    gpioToPwmPort[19] = 3;
-  }
-
-  usingGpioMem = FALSE;
-  if (gpiomemGlobal==NULL || (fd = open (gpiomemGlobal, O_RDWR | O_SYNC | O_CLOEXEC)) < 0)
-  {
-    if (wiringPiDebug) {
-      printf ("wiringPi: no access to %s try %s\n", gpiomemGlobal, gpiomemModule) ;
-    }
-    if (gpiomemModule && (fd = open (gpiomemModule, O_RDWR | O_SYNC | O_CLOEXEC) ) >= 0)	// We're using gpiomem
-    {
-      piGpioBase   = 0 ;
-      usingGpioMem = TRUE ;
-    }
-    else
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: Unable to open %s or %s: %s.\n"
+  if ((fd = open (gpiomem_global, O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
+    return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: Unable to open %s: %s.\n"
 	"  Aborting your program because if it can not access the GPIO\n"
 	"  hardware then it most certianly won't work\n"
-	"  Try running with sudo?\n", gpiomemGlobal, gpiomemModule, strerror (errno)) ;
+	"  Try running with sudo?\n", gpiomem_global, strerror (errno)) ;
   }
   if (wiringPiDebug) {
-    printf ("wiringPi: access to %s succeded %d\n", usingGpioMem ? gpiomemModule : gpiomemGlobal, fd) ;
+    printf ("wiringPi: access to %s succeded %d\n", gpiomem_global, fd) ;
   }
-//	GPIO:
-  if (!piRP1Model()) {
-   //Set the offsets into the memory interface.
+ 
+	switch (model) {
+		case PI_MODEL_HAIBOX_5A:
 
-    GPIO_PADS 	= piGpioBase + 0x00100000 ;
-    GPIO_CLOCK_ADR = piGpioBase + 0x00101000 ;
-    GPIO_BASE	  = piGpioBase + 0x00200000 ;
-    GPIO_TIMER	= piGpioBase + 0x0000B000 ;
-    GPIO_PWM	  = piGpioBase + 0x0020C000 ;
-    GPIO_RIO    = 0x00 ;
+			rk3588_soc.gpio0_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_GPIO0_BASE);
+			if (rk3588_soc.gpio0_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_GPIO0_BASE) failed: %s\n", strerror(errno));
 
-// Map the individual hardware components
+			rk3588_soc.gpio1_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_GPIO1_BASE);
+			if (rk3588_soc.gpio1_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_GPIO1_BASE) failed: %s\n", strerror(errno));
 
-  //	GPIO:
-    base = NULL;
-    gpio = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_BASE) ;
-    if (gpio == MAP_FAILED)
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap (GPIO) failed: %s\n", strerror (errno)) ;
+			rk3588_soc.gpio2_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_GPIO2_BASE);
+			if (rk3588_soc.gpio2_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_GPIO2_BASE) failed: %s\n", strerror(errno));
 
-  //	PWM
+			rk3588_soc.gpio3_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_GPIO3_BASE);
+			if (rk3588_soc.gpio3_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_GPIO3_BASE) failed: %s\n", strerror(errno));
 
-    pwm = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_PWM) ;
-    if (pwm == MAP_FAILED)
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap (PWM) failed: %s\n", strerror (errno)) ;
+			rk3588_soc.gpio4_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_GPIO4_BASE);
+			if (rk3588_soc.gpio4_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_GPIO4_BASE) failed: %s\n", strerror(errno));
 
-  //	Clock control (needed for PWM)
+			rk3588_soc.pmu1_ioc_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PMU1_IOC_BASE);
+			if (rk3588_soc.pmu1_ioc_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PMU1_IOC_BASE) failed: %s\n", strerror(errno));
 
-    clk = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_CLOCK_ADR) ;
-    if (clk == MAP_FAILED)
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap (CLOCK) failed: %s\n", strerror (errno)) ;
+			rk3588_soc.pmu2_ioc_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PMU2_IOC_BASE);
+			if (rk3588_soc.pmu2_ioc_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PMU2_IOC_BASE) failed: %s\n", strerror(errno));
 
-  //	The drive pads
+			rk3588_soc.bus_ioc_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_BUS_IOC_BASE);
+			if (rk3588_soc.bus_ioc_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_BUS_IOC_BASE) failed: %s\n", strerror(errno));
 
-    pads = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_PADS) ;
-    if (pads == MAP_FAILED)
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap (PADS) failed: %s\n", strerror (errno)) ;
+			rk3588_soc.cur_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_CRU_BASE);
+			if (rk3588_soc.cur_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_CRU_BASE) failed: %s\n", strerror(errno));
 
-  //	The system timer
+			rk3588_soc.pmu1cur_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PMU1CRU_BASE);
+			if (rk3588_soc.pmu1cur_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PMU1CRU_BASE) failed: %s\n", strerror(errno));
 
-    timer = (uint32_t *)mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, GPIO_TIMER) ;
-    if (timer == MAP_FAILED)
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap (TIMER) failed: %s\n", strerror (errno)) ;
+			rk3588_soc.vccio1_4_ioc_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_VCCIO1_4_IOC_BASE);
+			if (rk3588_soc.vccio1_4_ioc_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_VCCIO1_4_IOC_BASE) failed: %s\n", strerror(errno));
 
-  // Set the timer to free-running, 1MHz.
-  //	0xF9 is 249, the timer divide is base clock / (divide+1)
-  //	so base clock is 250MHz / 250 = 1MHz.
+			rk3588_soc.vccio3_5_ioc_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_VCCIO3_5_IOC_BASE);
+			if (rk3588_soc.vccio3_5_ioc_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_VCCIO3_5_IOC_BASE) failed: %s\n", strerror(errno));
 
-    *(timer + TIMER_CONTROL) = 0x0000280 ;
-    *(timer + TIMER_PRE_DIV) = 0x00000F9 ;
-    timerIrqRaw = timer + TIMER_IRQ_RAW ;
+			rk3588_soc.vccio6_ioc_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_VCCIO6_IOC_BASE);
+			if (rk3588_soc.vccio6_ioc_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_VCCIO6_IOC_BASE) failed: %s\n", strerror(errno));
 
-    // Export the base addresses for any external software that might need them
-    _wiringPiBase  = base ;
-    _wiringPiGpio  = gpio ;
-    _wiringPiPwm   = pwm ;
-    _wiringPiClk   = clk ;
-    _wiringPiPads  = pads ;
-    _wiringPiTimer = timer ;
-    _wiringPiRio   = NULL ;
-  } else {
-    unsigned int MMAP_size = (usingGpioMem) ? gpiomem_RP1_Size : pciemem_RP1_Size;
+			rk3588_soc.pwm0_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PWM0_BASE);
+			if (rk3588_soc.pwm0_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PWM0_BASE) failed: %s\n", strerror(errno));
 
-    GPIO_PADS 	= (RP1_PADS0_Addr-RP1_IO0_Addr) ;
-    GPIO_CLOCK_ADR = (RP1_CLOCK_Addr-RP1_BASE_Addr);
-    GPIO_BASE	  = (RP1_IO0_Addr-RP1_BASE_Addr) ;
-    GPIO_TIMER	=  0x00;
-    GPIO_PWM	  = RP1_PWM0_Addr-RP1_BASE_Addr;
-    GPIO_RIO    = (RP1_SYS_RIO0_Addr-RP1_IO0_Addr) ;
+			rk3588_soc.pwm1_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PWM1_BASE);
+			if (rk3588_soc.pwm1_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PWM1_BASE) failed: %s\n", strerror(errno));
 
-    //map hole RP1 memory block from beginning,
-    base = (unsigned int *)mmap(0, MMAP_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x00000000) ;
-    if (base == MAP_FAILED)
-      return wiringPiFailure (WPI_ALMOST, "wiringPiSetup: mmap failed: %s\n", strerror (errno)) ;
-    if (usingGpioMem) {
-      gpio = base;              // RP1 start adress of map memory for gpio (same as module memory)
-      pwm = NULL;               // outside of mapped memory, PWM not available from none root
-      clk = NULL;               // outside of mapped memory, CLK main not available from none root
-    } else {
-      gpio = &base[GPIO_BASE/4];      // RP1 start adress of map memory for gpio
-      pwm  = &base[GPIO_PWM/4];       // RP1 start adress of map memory for pwm0
-      clk  = &base[GPIO_CLOCK_ADR/4]; // RP1 start adress of map memory for clocks_main
-    }
-    pads = &gpio[GPIO_PADS/4];  // RP1 start adress of map memory for pads
-    rio  = &gpio[GPIO_RIO/4];   // RP1 start adress of map memory for rio
-    GPIO_PADS += GPIO_BASE;
-    GPIO_RIO += GPIO_BASE;
+			rk3588_soc.pwm2_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PWM2_BASE);
+			if (rk3588_soc.pwm2_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PWM2_BASE) failed: %s\n", strerror(errno));
 
-    // Export the base addresses for any external software that might need them
-    _wiringPiBase  = base ;
-    _wiringPiGpio  = gpio ;
-    _wiringPiPwm   = pwm  ;
-    _wiringPiClk   = clk  ;
-    _wiringPiPads  = pads ;
-    _wiringPiTimer = NULL ;
-    _wiringPiRio   = rio ;
-  }
-  if (wiringPiDebug) {
-    printf ("wiringPi: memory map gpio   0x%x %s\n", GPIO_BASE     , _wiringPiGpio ? "valid" : "invalid");
-    printf ("wiringPi: memory map pads   0x%x %s\n", GPIO_PADS     , _wiringPiPads ? "valid" : "invalid");
-    printf ("wiringPi: memory map rio    0x%x %s\n", GPIO_RIO      , _wiringPiRio  ? "valid" : "invalid");
-    printf ("wiringPi: memory map pwm0   0x%x %s\n", GPIO_PWM      , _wiringPiPwm  ? "valid" : "invalid");
-    printf ("wiringPi: memory map clocks 0x%x %s\n", GPIO_CLOCK_ADR, _wiringPiClk  ? "valid" : "invalid");
-    printf ("wiringPi: memory map timer  0x%x %s\n", GPIO_TIMER    ,_wiringPiTimer ? "valid" : "invalid");
-  }
+			rk3588_soc.pwm3_base = mmap(0, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, RK3588_PWM3_BASE);
+			if (rk3588_soc.pwm3_base == MAP_FAILED)
+				return wiringPiFailure(WPI_ALMOST, "wiringPiSetup: mmap (RK3588_PWM3_BASE) failed: %s\n", strerror(errno));
+
+			break;
+
+		default:
+			wiringPiFailure(WPI_ALMOST, "Oops - unable to determine board type... model: %d\n", model);
+			break ;
+	}
 
   initialiseEpoch () ;
 
@@ -3672,28 +2782,32 @@ int wiringPiSetupPinType (enum WPIPinType pinType) {
 
 
 int wiringPiSetupGpioDevice (enum WPIPinType pinType) {
- if (wiringPiSetuped)
+  int   model ;
+
+  if (wiringPiSetuped)
     return 0 ;
   if (wiringPiDebug) {
     printf ("wiringPi: wiringPiSetupGpioDevice(%d) called\n", (int)pinType) ;
   }
+
   if (getenv (ENV_DEBUG) != NULL)
     wiringPiDebug = TRUE ;
 
   if (getenv (ENV_CODES) != NULL)
     wiringPiReturnCodes = TRUE ;
 
-  if (wiringPiGpioDeviceGetFd()<0) {
-    return -1;
-  }
   wiringPiSetuped = TRUE ;
 
-  if (piGpioLayout () == GPIO_LAYOUT_PI1_REV1){
-    pinToGpio  = pinToGpioR1 ;
-    physToGpio = physToGpioR1 ;
-  } else {
-    pinToGpio  = pinToGpioR2 ;
-    physToGpio = physToGpioR2 ;
+  piBoardId (&model) ;
+
+	switch (model) {
+    case PI_MODEL_HAIBOX_5A:
+      pinToGpio =  pinToGpio_HaiBox_5A ;
+      physToGpio = physToGpio_HaiBox_5A ;
+      break;
+    default:
+			wiringPiFailure(WPI_ALMOST, "Oops - unable to determine board type... model: %d\n", model);
+      break;
   }
 
   initialiseEpoch () ;
