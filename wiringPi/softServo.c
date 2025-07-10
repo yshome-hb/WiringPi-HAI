@@ -90,7 +90,7 @@ static PI_THREAD (softServoThread)
   tTotal.tv_sec  =    0 ;
   tTotal.tv_usec = 8000 ;
 
-  piHiPri (50) ;
+  // piHiPri (50) ;
 
   for (;;)
   {

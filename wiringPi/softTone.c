@@ -59,7 +59,7 @@ static PI_THREAD (softToneThread)
   pin    = newPin ;
   newPin = -1 ;
 
-  piHiPri (50) ;
+  // piHiPri (50) ;
 
   for (;;)
   {

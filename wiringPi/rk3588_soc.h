@@ -7,6 +7,9 @@ extern "C" {
 
 #include <stdint.h>
 
+#define RK3588_GPIO_NUM                         (0x40)
+#define RK3588_GPIO_BIT(x)                      (1UL << (x))
+
 //gpio0~gpio4 register base addr
 #define RK3588_GPIO0_BASE                       0xfd8a0000U
 #define RK3588_GPIO1_BASE                       0xfec20000U
@@ -23,102 +26,93 @@ extern "C" {
 
 //CRU clock-controller base addr
 #define RK3588_CRU_BASE                         0xfd7c0000U
-#define RK3588_CRU_GATE_CON16_OFFSET            0x0840U    //for gpio1 bit 14 15    30 31
-#define RK3588_CRU_GATE_CON17_OFFSET            0x0844U    //for gpio2/3/4 - bit 0 1 2 3 4 5    16 17 18 19 20 21
+#define RK3588_CRU_GATE_CON15                   (RK3588_CRU_BASE + 0x083CU)    //for pwm123_clk_en
+#define RK3588_CRU_GATE_CON16                   (RK3588_CRU_BASE + 0x0840U)    //for gpio1 bit 14 15    30 31
+#define RK3588_CRU_GATE_CON17                   (RK3588_CRU_BASE + 0x0844U)    //for gpio2/3/4 - bit 0 1 2 3 4 5    16 17 18 19 20 21
+#define RK3588_CRU_GATE_CON19                   (RK3588_CRU_BASE + 0x084CU)    //for busioc_clk_en
 
 #define RK3588_PMU1CRU_BASE                     0xfd7f0000U
-#define RK3588_PMU1CRU_GATE_CON5_OFFSET         0x0814U    //for gpio0 - bit 5 6    21 22
-
-#define RK3588_GPIO_NUM                         (0x40)
-#define RK3588_GPIO_BIT(x)                      (1UL << (x))
+#define RK3588_PMU1CRU_GATE_CON1                (RK3588_PMU1CRU_BASE + 0x0804U)    //for pmu1pwm_clk_en
+#define RK3588_PMU1CRU_GATE_CON5                (RK3588_PMU1CRU_BASE + 0x0814U)    //for gpio0 - bit 5 6    21 22
 
 //gpio iomux
 #define RK3588_PMU1_IOC_BASE                    0xfd5f0000U
-#define RK3588_PMU1_IOC_GPIO0A_IOMUX_SEL_L      0x00U    //gpio0a0~gpio0b3
-#define RK3588_PMU1_IOC_GPIO0A_IOMUX_SEL_H      0x04U    //gpio0a4~gpio0b7
-#define RK3588_PMU1_IOC_GPIO0B_IOMUX_SEL_L      0x08U    //gpio0b0~gpio0b3
+#define RK3588_PMU1_IOC_GPIO0A_IOMUX_SEL_L      (RK3588_PMU1_IOC_BASE + 0x00U)    //gpio0a0~gpio0b3
+#define RK3588_PMU1_IOC_GPIO0A_IOMUX_SEL_H      (RK3588_PMU1_IOC_BASE + 0x04U)    //gpio0a4~gpio0b7
+#define RK3588_PMU1_IOC_GPIO0B_IOMUX_SEL_L      (RK3588_PMU1_IOC_BASE + 0x08U)    //gpio0b0~gpio0b3
+#define RK3588_PMU1_IOC_GPIO0A_P                (RK3588_PMU1_IOC_BASE + 0x20U)
+#define RK3588_PMU1_IOC_GPIO0B_P                (RK3588_PMU1_IOC_BASE + 0x24U)
 
 #define RK3588_PMU2_IOC_BASE                    0xfd5f4000U
-#define RK3588_PMU2_IOC_GPIO0B_IOMUX_SEL_H      0x00U    //gpio0a5~gpio0b7
-#define RK3588_PMU2_IOC_GPIO0C_IOMUX_SEL_L      0x04U    //gpio0a0~gpio0b3
-#define RK3588_PMU2_IOC_GPIO0C_IOMUX_SEL_H      0x08U    //gpio0a4~gpio0b7
-#define RK3588_PMU2_IOC_GPIO0D_IOMUX_SEL_L      0x0cU    //gpio0a0~gpio0b3
-#define RK3588_PMU2_IOC_GPIO0D_IOMUX_SEL_H      0x10U    //gpio0a4~gpio0b6
+#define RK3588_PMU2_IOC_GPIO0B_IOMUX_SEL_H      (RK3588_PMU2_IOC_BASE + 0x00U)    //gpio0a5~gpio0b7
+#define RK3588_PMU2_IOC_GPIO0C_IOMUX_SEL_L      (RK3588_PMU2_IOC_BASE + 0x04U)    //gpio0a0~gpio0b3
+#define RK3588_PMU2_IOC_GPIO0C_IOMUX_SEL_H      (RK3588_PMU2_IOC_BASE + 0x08U)    //gpio0a4~gpio0b7
+#define RK3588_PMU2_IOC_GPIO0D_IOMUX_SEL_L      (RK3588_PMU2_IOC_BASE + 0x0cU)    //gpio0a0~gpio0b3
+#define RK3588_PMU2_IOC_GPIO0D_IOMUX_SEL_H      (RK3588_PMU2_IOC_BASE + 0x10U)    //gpio0a4~gpio0b6
+#define RK3588_PMU2_IOC_GPIO0B_P                (RK3588_PMU2_IOC_BASE + 0x28U)
+#define RK3588_PMU2_IOC_GPIO0C_P                (RK3588_PMU2_IOC_BASE + 0x2cU)
+#define RK3588_PMU2_IOC_GPIO0D_P                (RK3588_PMU2_IOC_BASE + 0x30U)
 
 #define RK3588_BUS_IOC_BASE                     0xfd5f8000U
 
 //gpio pull up/down
 #define RK3588_VCCIO1_4_IOC_BASE                0xfd5f9000U
-#define RK3588_VCCIO3_5_IOC_BASE                0xfd5fa000U
-#define RK3588_VCCIO6_IOC_BASE                  0xfd5fc000U
+#define RK3588_VCCIO1_4_IOC_GPIO1A_P            (RK3588_VCCIO1_4_IOC_BASE + 0x0110U)
 
-#define RK3588_PMU1_IOC_GPIO0A_P                0x0020U
-#define RK3588_PMU1_IOC_GPIO0B_P                0x0024U
-#define RK3588_PMU2_IOC_GPIO0B_P                0x0028U
-#define RK3588_PMU2_IOC_GPIO0C_P                0x002cU
-#define RK3588_PMU2_IOC_GPIO0D_P                0x0030U
-#define RK3588_VCCIO1_4_IOC_GPIO1A_P            0x0110U
-#define RK3588_VCCIO3_5_IOC_GPIO2A_P            0x0120U
-#define RK3588_VCCIO6_IOC_GPIO4A_P              0x0140U
+#define RK3588_VCCIO3_5_IOC_BASE                0xfd5fa000U
+#define RK3588_VCCIO3_5_IOC_GPIO2A_P            (RK3588_VCCIO3_5_IOC_BASE + 0x0120U)
+
+#define RK3588_VCCIO6_IOC_BASE                  0xfd5fc000U
+#define RK3588_VCCIO6_IOC_GPIO4A_P              (RK3588_VCCIO6_IOC_BASE + 0x0140U)
 
 //pwm register base addr
-//#define RK3588_CRU_BASE                       0xfd7c0000U
-//#define RK3588_PMU1CRU_BASE                   0xfd7f0000U
 #define RK3588_PWM0_BASE                        0xfd8b0000U
 #define RK3588_PWM1_BASE                        0xfe8d0000U
 #define RK3588_PWM2_BASE                        0xfebe0000U
 #define RK3588_PWM3_BASE                        0xfebf0000U
 
-//cru
-#define RK3588_CRU_GATE_CON19                   (RK3588_CRU_BASE + 0x084CU)    //for busioc_clk_en
-#define RK3588_CRU_GATE_CON15                   (RK3588_CRU_BASE + 0x083CU)    //for pwm123_clk_en
-#define RK3588_PMU1CRU_GATE_CON1                (RK3588_PMU1CRU_BASE +0x0804U)    //for pmu1pwm_clk_en
-
 //CH0
-#define RK3588_CH0_PERIOD_HPR                   (RK3588_PWM_BASE + 0x04)
-#define RK3588_CH0_DUTY_LPR                     (RK3588_PWM_BASE + 0x08)
-#define RK3588_CH0_CTRL                         (RK3588_PWM_BASE + 0x0C)
+#define RK3588_CH0_PERIOD_HPR(base)             (base + 0x04U)
+#define RK3588_CH0_DUTY_LPR(base)               (base + 0x08U)
+#define RK3588_CH0_CTRL(base)                   (base + 0x0CU)
 
 //CH1
-#define RK3588_CH1_PERIOD_HPR                   (RK3588_PWM_BASE + 0x14)
-#define RK3588_CH1_DUTY_LPR                     (RK3588_PWM_BASE + 0x18)
-#define RK3588_CH1_CTRL                         (RK3588_PWM_BASE + 0x1C)
+#define RK3588_CH1_PERIOD_HPR(base)             (base + 0x14U)
+#define RK3588_CH1_DUTY_LPR(base)               (base + 0x18U)
+#define RK3588_CH1_CTRL(base)                   (base + 0x1CU)
 
 //CH2
-#define RK3588_CH2_PERIOD_HPR                   (RK3588_PWM_BASE + 0x24)
-#define RK3588_CH2_DUTY_LPR                     (RK3588_PWM_BASE + 0x28)
-#define RK3588_CH2_CTRL                         (RK3588_PWM_BASE + 0x2C)
+#define RK3588_CH2_PERIOD_HPR(base)             (base + 0x24U)
+#define RK3588_CH2_DUTY_LPR(base)               (base + 0x28U)
+#define RK3588_CH2_CTRL(base)                   (base + 0x2CU)
 
 //CH3
-#define RK3588_CH3_PERIOD_HPR                   (RK3588_PWM_BASE + 0x34)
-#define RK3588_CH3_DUTY_LPR                     (RK3588_PWM_BASE + 0x38)
-#define RK3588_CH3_CTRL                         (RK3588_PWM_BASE + 0x3C)
+#define RK3588_CH3_PERIOD_HPR(base)             (base + 0x34U)
+#define RK3588_CH3_DUTY_LPR(base)               (base + 0x38U)
+#define RK3588_CH3_CTRL(base)                   (base + 0x3CU)
 
-//for short——pwm
-#define RK3588_PWM_BASE                         (rk3588_soc.pwm_base)
-#define RK3588_PWM_MUX                          (rk3588_soc.pwm_mux)
-#define RK3588_PWM_MUX_VAL                      (rk3588_soc.pwm_mux_val)
-#define RK3588_PWM_MUX_OFFSET                   (rk3588_soc.pwm_mux_offset)
-#define RK3588_CH_PERIOD_HPR                    (rk3588_soc.ch_period_hpr)
-#define RK3588_CH_DUTY_LPR                      (rk3588_soc.ch_duty_lpr)
-#define RK3588_CH_CTRL                          (rk3588_soc.ch_crtl)
+//pwm_ctrl_register
+#define PWM_CTRL_RPT                            (24)    // 24 ~ 31
+#define PWM_CTRL_SCALE                          (16)    // 16 ~ 23
+#define PWM_CTRL_PRESCALE                       (12)    // 12 ~ 14
+#define PWM_CTRL_CLK_SRC_SEL                    (10)
+#define PWM_CTRL_CLK_SEL                        (9)
+#define PWM_CTRL_FORCE_CLK_EN                   (8)
+#define PWM_CTRL_CH_CNT_EN                      (7)
+#define PWM_CTRL_CONLOCK                        (6)
+#define PWM_CTRL_OUTPUT_MODE                    (5)
+#define PWM_CTRL_INACTIVE_POL                   (4)
+#define PWM_CTRL_DUTY_POL                       (3)
+#define PWM_CTRL_PWM_MODE                       (1)     // 1 ~ 2
+#define PWM_CTRL_PWM_EN                         (0)
 
-//pwm_ctrl_offset
-#define RK3588_RPT                              (24)    // 24 ~ 31
-#define RK3588_SCALE                            (16)    // 16 ~ 23
-#define RK3588_PRESCALE                         (12)    // 12 ~ 14
-#define RK3588_CLK_SRC_SEL                      (10)
-#define RK3588_CLK_SEL                          (9)
-#define RK3588_FORCE_CLK_EN                     (8)
-#define RK3588_CH_CNT_EN                        (7)
-#define RK3588_CONLOCK                          (6)
-#define RK3588_OUTPUT_MODE                      (5)
-#define RK3588_INACTIVE_POL                     (4)
-#define RK3588_DUTY_POL                         (3)
-#define RK3588_PWM_MODE                         (1)     // 1 ~ 2
-#define RK3588_PWM_EN                           (0)
+#define PWM_CTRL_SCALE_MAX                      512
+
+typedef int (pin_group_t)[32]; 
 
 typedef struct {
+	pin_group_t *pin_mask;
+
 	void *gpio0_base;
 	void *gpio1_base;
 	void *gpio2_base;
@@ -129,8 +123,8 @@ typedef struct {
 	void *pmu2_ioc_base;
 	void *bus_ioc_base;
 
-	void *cur_base;
-	void *pmu1cur_base;
+	void *cru_base;
+	void *pmu1cru_base;
 
 	void *vccio1_4_ioc_base;
 	void *vccio3_5_ioc_base;
@@ -140,27 +134,19 @@ typedef struct {
 	void *pwm1_base;
 	void *pwm2_base;
 	void *pwm3_base;
-	uint32_t pwm_base;
-	uint32_t pwm_mux;
-	uint32_t pwm_mux_val;
-	uint32_t pwm_mux_offset;
-	uint32_t ch_period_hpr;
-	uint32_t ch_duty_lpr;
-	uint32_t ch_crtl;
 
 } rk3588_soc_t;
 
-extern rk3588_soc_t rk3588_soc;
-
-extern void rk3588_setPinMask(int model);
-extern uint32_t rk3588_readR(uint32_t addr);
-extern void rk3588_writeR(uint32_t addr, uint32_t val);
+extern int rk3588_setupReg(int fd);
+extern int rk3588_setPinMask(int model);
+extern int rk3588_getPinMode(int pin);
+extern int rk3588_setPinMode(int pin, int mode);
+extern int rk3588_setPullUpDn(int pin, int pud);
 extern int rk3588_digitalRead(int pin);
 extern int rk3588_digitalWrite(int pin, int value);
-extern int rk3588_pwmWrite(int pin, int value);
-extern int rk3588_getAlt(int pin);
-extern int rk3588_pinMode(int pin, int mode);
-extern int rk3588_pullUpDnControl(int pin, int pud);
+extern int rk3588_pwmWrite(int pin, unsigned int value);
+extern int rk3588_pwmClock(int pin, unsigned int divisor);
+extern int rk3588_pwmRange(int pin, unsigned int range);
 
 #ifdef __cplusplus
 }

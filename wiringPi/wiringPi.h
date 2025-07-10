@@ -147,16 +147,6 @@ struct wiringPiNodeStruct
 
 extern struct wiringPiNodeStruct *wiringPiNodes ;
 
-// Export variables for the hardware pointers
-
-extern volatile unsigned int *_wiringPiGpio ;
-extern volatile unsigned int *_wiringPiPwm ;
-extern volatile unsigned int *_wiringPiClk ;
-extern volatile unsigned int *_wiringPiPads ;
-extern volatile unsigned int *_wiringPiTimer ;
-extern volatile unsigned int *_wiringPiTimerIrqRaw ;
-
-
 // Function prototypes
 //	c++ wrappers thanks to a comment by Nick Lott
 //	(and others on the Raspberry Pi forums)
@@ -166,6 +156,20 @@ extern "C" {
 #endif
 
 // Data
+struct wiringPiFuncStruct
+{
+  int (*setupReg)(int fd) ;
+  int (*setPinMask)(int model) ;
+  int (*getPinMode)(int pin) ;
+  int (*setPinMode)(int pin, int mode);
+  int (*setPinAlt)(int pin, int alt);
+  int (*setPullUpDn)(int pin, int pud);
+  int (*digitalRead)(int pin) ;
+  int (*digitalWrite)(int pin, int value) ;
+  int (*pwmWrite)(int pin, unsigned int value) ;
+  int (*pwmClock)(int pin, unsigned int divisor) ;
+  int (*pwmRange)(int pin, unsigned int range) ;
+} ;
 
 // Internal
 extern void piGpioLayoutOops (const char *why);
@@ -176,41 +180,13 @@ extern int wiringPiFailure (int fatal, const char *message, ...) ;
 extern struct wiringPiNodeStruct *wiringPiFindNode (int pin) ;
 extern struct wiringPiNodeStruct *wiringPiNewNode  (int pinBase, int numPins) ;
 
-enum WPIPinType {
-  WPI_PIN_BCM = 1,
-  WPI_PIN_WPI,
-  WPI_PIN_PHYS,
-};
-
 extern void wiringPiVersion	(int *major, int *minor) ;
 extern int  wiringPiSetup       (void) ;
 extern int  wiringPiSetupSys    (void) ;
 extern int  wiringPiSetupGpio   (void) ;
 extern int  wiringPiSetupPhys   (void) ;
-extern int  wiringPiSetupPinType (enum WPIPinType pinType);   //Interface V3.3
-extern int  wiringPiSetupGpioDevice(enum WPIPinType pinType); //Interface V3.3
 
-
-enum WPIPinAlt {
-  WPI_ALT_UNKNOWN = -1,
-  WPI_ALT_INPUT = 0,
-  WPI_ALT_OUTPUT,
-  WPI_ALT5,
-  WPI_ALT4,
-  WPI_ALT0,
-  WPI_ALT1,
-  WPI_ALT2,
-  WPI_ALT3,
-  WPI_ALT6,
-  WPI_ALT7,
-  WPI_ALT8,
-  WPI_ALT9,
-  WPI_NONE = 0x1F,  // Pi5 default
-};
-
-
-extern void pinModeAlt          (int pin, int mode) ;
-extern enum WPIPinAlt getPinModeAlt       (int pin) ;  // Interface V3.5, same as getAlt but wie enum
+extern void pinModeAlt          (int pin, int alt) ;
 extern void pinMode             (int pin, int mode) ;
 extern void pullUpDnControl     (int pin, int pud) ;
 extern int  digitalRead         (int pin) ;
@@ -229,24 +205,20 @@ extern          void setPadDrivePin      (int pin, int value);     // Interface 
 extern          int  getAlt              (int pin) ;
 extern          void pwmToneWrite        (int pin, int freq) ;
 extern          void pwmSetMode          (int mode) ;
-extern          void pwmSetRange         (unsigned int range) ;
-extern          void pwmSetClock         (int divisor) ;
-extern          void gpioClockSet        (int pin, int freq) ;
+extern          void pwmSetRange         (int pin, unsigned int range) ;
+extern          void pwmSetClock         (int pin, unsigned int divisor) ;
 extern unsigned int  digitalReadByte     (void) ;
-extern unsigned int  digitalReadByte2    (void) ;
-extern          void digitalWriteByte    (int value) ;
-extern          void digitalWriteByte2   (int value) ;
+extern          void digitalWriteByte    (unsigned int value) ;
 
 // Interrupts
 // status returned from waitForInterruptV2    V3.16
 struct WPIWfiStatus {
-    int statusOK;               // -1: error (return of 'poll' command), 0: timeout, 1: irq processed, next data values are valid if needed
-    unsigned int pinBCM;        // gpio as BCM pin
-    int edge;                   // INT_EDGE_FALLING or INT_EDGE_RISING
-    long long int timeStamp_us; // time stamp in microseconds
+  int statusOK;               // -1: error (return of 'poll' command), 0: timeout, 1: irq processed, next data values are valid if needed
+  unsigned int pinGPIO;       // gpio as soc pin
+  int edge;                   // INT_EDGE_FALLING or INT_EDGE_RISING
+  long long int timeStamp_us; // time stamp in microseconds
 };
 
-//extern int  waitForInterrupt    (int pin, int ms);  unknown if still working, disabled for V3.16, please contact developer via github
 extern int  wiringPiISR         (int pin, int mode, void (*function)(void)) ;
 extern struct WPIWfiStatus  waitForInterrupt2(int pin, int edgeMode, int ms, unsigned long debounce_period_us) ;   // V3.16
 extern int  wiringPiISR2       (int pin, int edgeMode, void (*function)(struct WPIWfiStatus wfiStatus, void* userdata), unsigned long debounce_period_us, void* userdata) ;  // V3.16
@@ -258,10 +230,6 @@ extern int  waitForInterruptClose(int pin) ; //V3.2 legacy use wiringPiISRStop
 extern int  piThreadCreate      (void *(*fn)(void *)) ;
 extern void piLock              (int key) ;
 extern void piUnlock            (int key) ;
-
-// Schedulling priority
-
-extern int piHiPri (const int pri) ;
 
 // Extras from arduino land
 
