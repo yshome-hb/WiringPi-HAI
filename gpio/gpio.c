@@ -78,8 +78,8 @@ char *usage = "Usage: gpio -v\n"
               "         where <mode> can be: rising, falling, both\n"
               "       gpio drive <group> <value>\n"
               "       gpio pwm-bal/pwm-ms \n"
-              "       gpio pwmr <range> \n"
-              "       gpio pwmc <divider> \n"
+              "       gpio pwmr <pin> <range> \n"
+              "       gpio pwmc <pin> <divider> \n"
               "       gpio i2cd/i2cdetect\n"
               "       gpio rbx/rbd\n"
               "       gpio wb <value>\n"
@@ -198,29 +198,6 @@ static void wfi (void) {
 }
 
 
-static void wfi2(struct WPIWfiStatus wfiStatus, void* userdata) {
-  (void)wfiStatus;
-  (void)userdata;
-  globalCounter++;
-  if (globalCounter>=globalIterations) {
-    switch(wfiStatus.edge) {
-      case INT_EDGE_FALLING:
-        printgpio("finished falling\n");
-        break;
-      case INT_EDGE_RISING:
-        printgpio("finished rising\n");
-        break;
-      default:
-        printgpio("finished\n");
-        break;
-    }
-    exit(wfiStatus.edge);
-  } else {
-    printgpioflush("I");
-  }
-}
-
-
 int get_wfi_edge(const char* arg_cmd, const char* arg_mode, int exitcode) {
     if (strcasecmp (arg_mode, "rising")  == 0) {
     return INT_EDGE_RISING ;
@@ -236,30 +213,12 @@ int get_wfi_edge(const char* arg_cmd, const char* arg_mode, int exitcode) {
 
 
 void doWfiInternal(const char* cmd, int pin, int mode, int interations, int timeoutSec, int debounce) {
-
-  globalIterations = interations;
-  globalCounter = 0;
-  if (debounce>=0) {
-    // V2 function
-    if (wiringPiISR2(pin, mode, &wfi2, debounce, NULL) < 0) {
-      fprintf (stderr, "%s: Unable to setup ISR2: %s\n", cmd, strerror (errno));
-      exit(1);
-    }
-  } else {
-    // classic function
-    if (wiringPiISR(pin, mode, &wfi) < 0) {
-      fprintf (stderr, "%s: Unable to setup ISR: %s\n", cmd, strerror (errno));
-      exit(1);
-    }
-  }
-
-  printgpio("wait for interrupt function call\n");
-  for (int Sec=0; Sec<timeoutSec; ++Sec) {
-    printgpioflush(".");
-    delay(999);
-  }
-  printgpio("\nstopping wait for interrupt\n");
-  wiringPiISRStop(pin);
+  (void)cmd;
+  (void)pin;
+  (void)mode;
+  (void)interations;
+  (void)timeoutSec;
+  (void)debounce;
 }
 
 
@@ -743,7 +702,6 @@ void doBlink (int argc, char *argv [])
     digitalWrite (pin, !digitalRead (pin)) ;
     delay (500) ;
   }
-
 }
 
 
@@ -790,7 +748,7 @@ void doClock (int argc, char *argv [])
 
   freq = atoi (argv [3]) ;
 
-  gpioClockSet (pin, freq) ;
+  // gpioClockSet (pin, freq) ;
 }
 
 
@@ -831,15 +789,17 @@ static void doPwmMode (int mode)
 
 static void doPwmRange (int argc, char *argv [])
 {
+  int pin ;
   unsigned int range ;
 
-  if (argc != 3)
+  if (argc != 4)
   {
-    fprintf (stderr, "Usage: %s pwmr <range>\n", argv [0]) ;
+    fprintf (stderr, "Usage: %s pwmr <pin> <range>\n", argv [0]) ;
     exit (1) ;
   }
 
-  range = (unsigned int)strtoul (argv [2], NULL, 10) ;
+  pin = atoi (argv [2]) ;
+  range = (unsigned int)strtoul (argv [3], NULL, 10) ;
 
   if (range == 0)
   {
@@ -847,28 +807,30 @@ static void doPwmRange (int argc, char *argv [])
     exit (1) ;
   }
 
-  pwmSetRange (range) ;
+  pwmSetRange (pin, range) ;
 }
 
 static void doPwmClock (int argc, char *argv [])
 {
-  unsigned int clock ;
+  int pin ;
+  unsigned int divisor ;
 
-  if (argc != 3)
+  if (argc != 4)
   {
-    fprintf (stderr, "Usage: %s pwmc <clock>\n", argv [0]) ;
+    fprintf (stderr, "Usage: %s pwmc <pin> <divider>\n", argv [0]) ;
     exit (1) ;
   }
 
-  clock = (unsigned int)strtoul (argv [2], NULL, 10) ;
+  pin = atoi (argv [2]) ;
+  divisor = (unsigned int)strtoul (argv [3], NULL, 10) ;
 
-  if ((clock < 1) || (clock > 4095))
+  if ((divisor < 1) || (divisor > 512))
   {
     fprintf (stderr, "%s: pwm clock must be between 1 and 4095\n", argv [0]) ;
     exit (1) ;
   }
 
-  pwmSetClock (clock) ;
+  pwmSetClock (pin, divisor) ;
 }
 
 

@@ -78,7 +78,7 @@ static void *softPwmThread (void *arg)
   pin    = newPin ;
   newPin = -1 ;
 
-  piHiPri (90) ;
+  // piHiPri (90) ;
 
   for (;;)
   {
